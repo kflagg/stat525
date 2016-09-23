@@ -1,0 +1,361 @@
+\documentclass[11pt]{article}
+\usepackage{fullpage}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{amsmath}
+\usepackage{enumitem}
+\setlist{parsep=5.5pt}
+\setlength{\parindent}{0pt}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\lhead{Stat 525 Homework 1}
+\chead{September 9, 2016}
+\rhead{Kenny Flagg}
+\setlength{\headheight}{18pt}
+\setlength{\headsep}{2pt}
+
+\title{Stat 525 Homework 1}
+\author{Kenny Flagg}
+\date{September 9, 2016}
+
+\begin{document}
+\maketitle
+
+<<setup, echo = FALSE, message = FALSE, cache = FALSE>>=
+require(knitr)
+require(extrafont)
+opts_chunk$set(echo = FALSE, comment = NA, fig.align = 'center',
+               fig.width = 6.5, fig.height = 3, fig.pos = 'H',
+               size = 'footnotesize', dev = 'pdf',
+               dev.args = list(family = 'CM Roman', pointsize = 11))
+knit_theme$set('print')
+
+require(xtable)
+options(xtable.table.placement = 'H', width = 80, show.signif.stars = FALSE)
+@
+
+\begin{enumerate}
+
+\item%1
+{\it We are studying upper respiratory infections (URI) under the following
+assumptions:}
+\begin{itemize}
+\item{\it Each infection lasts 10 days and the person is immune once he/she
+recovers.}
+\item{\it Infections begin at 12:01 AM on the indicated date.}
+\item{\it No one dies during the study period.}
+\item{\it September and November have 30 days, August and October have 31
+days.}
+\item{\it A person with a URI is not at risk of other URI infections during the
+10 days he/she is sick.}
+\end{itemize}
+{\it The time period of interest is September 1 - November 30 inclusive. The
+plot below shows the results for each of the 10 people. The following histories
+are observed with the dates indicating the date of onset of URI: Person A got
+sick on August 25, Person C got sick on September 10, Person D got sick on
+October 15, Person F got sick on November 28, and Person H got sick on November
+24. The other individuals did not get sick. The disease histories are shown
+below.}
+
+(Plot and answers begin on the next page.)
+
+\begin{figure}[H]\centering
+\includegraphics[page=1,trim={1in 1.5in 2in 4.5in},clip]{Homework1.pdf}
+\end{figure}
+
+\begin{enumerate}
+
+\item%a
+{\it Compute point prevalence on September 1.}
+
+On September 1, one individual had the URI and nine were at risk, so
+\begin{equation*}
+\text{point prevalence}=\frac{1}{9+1}=0.1
+\end{equation*}
+
+\item%b
+{\it Compute point prevalence on November 30.}
+
+On November 30, two individuals had the URI and five were at risk, so
+\begin{equation*}
+\text{point prevalence}=\frac{2}{5+2}=0.286
+\end{equation*}
+
+\item%c
+{\it Compute incidence proportion over the interval [Sept 1, Nov 30].}
+
+On September 1, nine individuals were at risk. Four individuals contracted the
+URI between September 1 and November 30. Therefore
+\begin{equation*}
+\text{incidence proportion}=\frac{4}{9}=0.444
+\end{equation*}
+
+\item%d
+{\it Compute person-days at risk for the interval.}
+
+The table below shows how many days of each month each person was at risk.
+There were a total of 679 person-days at risk in the interval [Sept 1, Nov 30].
+
+<<oned, results = 'asis'>>=
+riskdays <- data.frame(Person = LETTERS[1:10],
+                       September = rep(30, 10),
+                       October = rep(31, 10),
+                       November = rep(30, 10),
+                       row.names = LETTERS[1:10])
+riskdays['A', 2:4] <- 0
+riskdays['C', 2:4] <- c(9, 0, 0)
+riskdays['D', 3:4] <- c(14, 0)
+riskdays['F', 'November'] <- riskdays['F', 'November'] - 4
+riskdays['H', 'November'] <- riskdays['H', 'November'] - 7
+riskdays$Total <- apply(riskdays[,-1], 1, sum)
+riskdays <- rbind(riskdays, Total = data.frame(Person = 'Total',
+                                     rbind(apply(riskdays[,-1], 2, sum))))
+print(xtable(riskdays, digits = 0, align = 'c|crrr|r|'),
+      include.rownames = FALSE, hline.after = c(-1, 0, 10, 11))
+@
+
+\item%d
+{\it Compute incidence rate for the interval.}
+
+The incidence rate is
+\begin{equation*}
+\frac{4\text{ people}}{679\text{ person-days}}=0.005891\mathrm{day}
+\end{equation*}
+
+\end{enumerate}
+
+\item%2
+{\it On page 9 of the notes I give Incidence Proportions and Point Prevalences
+for CHD for the data in Table 2.1 on page 11. Verify these values.}
+
+\begin{itemize}
+\item High Cholesterol Incidence:
+\(\displaystyle \frac{85}{85+462}=0.156\)
+\item High Cholesterol Prevalence:
+\(\displaystyle \frac{38}{38+371}=0.093\)
+\item Low Cholesterol Incidence:
+\(\displaystyle \frac{28}{28+516}=0.051\)
+\item Low Cholesterol Prevalence:
+\(\displaystyle \frac{33}{33+347}=0.087\)
+\end{itemize}
+
+\item%3
+{\it Given the definition we have for the incidence proportion we have in
+Jewell, it could, stangely enough, theoretically exceed 1. What type of disease
+process would be implied by such a result?}
+
+This would imply that the disease recurs---that is individuals recover quickly,
+become at-risk again, and contract the disease again multiple times during the
+interval. Note that this may or may not be possible depending on how a ``new
+case'' is defined.
+
+\pagebreak
+\item%4
+{\it Problem 3.1 on page 29 in Jewell. Read over the problem carefully. Note
+that the problem asks for CIs for two groups: one who ate no fish and one group
+who did eat fish. The (approximate) 95\% CIs you will be computing are for
+incidence proportions of CHD related deaths in a 25 year time period. Give me
+the following for both groups.}
+\begin{itemize}
+\item{\it Approximate continuity corrected Wald intervals.}
+\item{\it Approximate continuity corrected Score intervals (use
+\texttt{prop.test}).}
+\item{\it The exact intervals (use \texttt{binom.test}).}
+\end{itemize}
+{\it Based on the intervals does there appear to be evidence of a relationship
+between CHD related deaths and fish consumption? Justify your answer. (Note:
+the clearest way to answer this question is to construct an interval for the
+difference between two incidence proportions, but just address the question by
+looking at the intervals from the two groups separately. Care is needed and we
+will all admit to a bit of speculation here.)}
+
+\textbf{For the men who reported no fish consumption:}
+\begin{itemize}
+\item Proportion who died from CHD:
+\begin{equation*}\widehat{p}=\frac{42}{205}=0.2049\end{equation*}
+\item Wald interval:
+\begin{equation*}
+0.2049 \pm \left(1.96 \sqrt{\frac{0.2049 \times 0.7951}{205}}
++ \frac{0.5}{205}\right) =
+<<fourwald1, results = 'asis'>>=
+cat('\\left(')
+cat(round((42/205) + c(-1, 1) *
+      (qnorm(0.975) * sqrt((42/205) * (1-42/205) / 205) + (0.5/205)), 4),
+    sep = ', ')
+cat('\\right)')
+@
+\end{equation*}
+\item Score interval:
+<<fourscore1a, echo = TRUE, comment = '#'>>=
+prop.test(42, 205, alternative = 'two.sided', conf.level = 0.95, correct = TRUE)
+@
+The interval is \(
+<<fourscore1b, results = 'asis'>>=
+cat('\\left(')
+cat(round(prop.test(42, 205, alternative = 'two.sided', conf.level = 0.95,
+                     correct = TRUE)$conf.int, 4), sep = ', ')
+cat('\\right)')
+@
+\)
+\pagebreak
+\item Exact interval:
+<<fourexact1a, echo = TRUE, comment = '#'>>=
+binom.test(42, 205, alternative = 'two.sided', conf.level = 0.95)
+@
+The interval is \(
+<<fourexact1b, results = 'asis'>>=
+cat('\\left(')
+cat(round(binom.test(42, 205, alternative = 'two.sided',
+                      conf.level = 0.95)$conf.int, 4), sep = ', ')
+cat('\\right)')
+@
+\)
+\end{itemize}
+
+\textbf{For the men who reported over 35 g of daily fish consumption:}
+\begin{itemize}
+\item Proportion who died from CHD:
+\begin{equation*}\widehat{p}=\frac{34}{261}=0.1303\end{equation*}
+\item Wald interval:
+\begin{equation*}
+0.1303 \pm \left(1.96 \sqrt{\frac{0.1303 \times 0.8697}{261}}
++ \frac{0.5}{261}\right) =
+<<fourwald2, results = 'asis'>>=
+cat('\\left(')
+cat(round((34/261) + c(-1, 1) *
+      (qnorm(0.975) * sqrt((34/261) * (1-34/261) / 261) + (0.5/261)), 4),
+    sep = ', ')
+cat('\\right)')
+@
+\end{equation*}
+\item Score interval:
+<<fourscore2a, echo = TRUE, comment = '#'>>=
+prop.test(34, 261, alternative = 'two.sided', conf.level = 0.95, correct = TRUE)
+@
+The interval is \(
+<<fourscore2b, results = 'asis'>>=
+cat('\\left(')
+cat(round(prop.test(34, 261, alternative = 'two.sided', conf.level = 0.95,
+                     correct = TRUE)$conf.int, 4), sep = ', ')
+cat('\\right)')
+@
+\)
+\pagebreak
+\item Exact interval:
+<<fourexact2a, echo = TRUE, comment = '#'>>=
+binom.test(43, 261, alternative = 'two.sided', conf.level = 0.95)
+@
+The interval is \(
+<<fourexact2b, results = 'asis'>>=
+cat('\\left(')
+cat(round(binom.test(34, 261, alternative = 'two.sided',
+                      conf.level = 0.95)$conf.int, 4), sep = ', ')
+cat('\\right)')
+@
+\)
+\end{itemize}
+
+\textbf{Comparison:}
+
+The observed proportions of men who died of CHD are 0.2049 in the no fish group
+and 0.1303 in the more than 35 g of fish group. Since we're just waving our
+hands around at this point, I'll compare the narrowest intervals
+(the exact intervals). The exact 95\% confidence interval for the true
+proportion of men who reported consuming no fish and died of CHD is (0.1518,
+0.2667). The exact interval for the true proportion of men who reported
+consuming more than 35 g of fish daily and died of CHD is (0.0919, 0.1773).
+These intervals overlap, suggesting the observed difference could be due to
+random chance. There is little evidence that the true proportion of CHD deaths
+differs between the two groups.
+
+\item%5
+{\it Problem 3.2 on pages 29 and 30 in Jewell.}
+
+\begin{itemize}
+\item\(P(\text{child with single parent})=\dfrac{65085}{986342}=0.0660\)
+\item\(P(\text{child died})=\dfrac{664}{986342}=0.000673\)
+\begin{itemize}
+\item\(P(\text{child died}|\text{single parent})=\dfrac{56}{65085}=0.000860\)
+\item\(P(\text{child died}|\text{two parents})=\dfrac{608}{921257}=0.000660\)
+\end{itemize}
+\item\(P(\text{suicide})=\dfrac{115}{986342}=0.000117\)
+\begin{itemize}
+\item\(P(\text{suicide}|\text{single parent})=\dfrac{19}{65085}=0.000292\)
+\item\(P(\text{suicide}|\text{two parents})=\dfrac{96}{921257}=0.000104\)
+\end{itemize}
+\end{itemize}
+
+The proportions of children who died and committed suicide are small (less than
+one in 1,000 in both the singe-parent and two-parent groups). Both of these
+proportions are larger for the single-parent group than for the two-parent
+group, with the suicide rate more than twice as high for children in
+single-parent households than for children in two-parent households. This
+leaves the possibility that mortality rate and/or suicide rate are associated
+with living situation. Note that these data cover the entire population of
+interest and are not representative of children in other countries or time
+periods, so frequentist hypothesis tests and confidence intervals for the
+difference in proportions are not approporiate.
+
+\item%6
+{\it STAT Graduate Students:}
+
+\begin{enumerate}
+\item%a
+{\it Recalling that}
+\begin{equation*}\label{start}
+h(t)=\frac{d}{dt}\left(-\log S(t)\right)
+\end{equation*}
+{\it show that, if S(0) = 1 then}
+\begin{equation*}
+S(t)=\exp\left\{-\int_0^th(u)du\right\}
+\end{equation*}
+
+Using the fundamental theorem of calculus,
+\begin{align*}
+\int_0^t\frac{d}{dt}\left(-\log S(u)\right)du&=\int_0^th(u)du\\
+\left.-\log S(u)\right|_{u=0}^t&=\int_0^th(u)du\\
+-\log S(t)+\log S(0)&=\int_0^th(u)du\\
+-\log S(t)+\log 1&=\int_0^th(u)du\\
+-\log S(t)&=\int_0^th(u)du\\
+S(t)&=\exp\left\{-\int_0^th(u)du\right\}
+\end{align*}
+
+\item%b
+{\it Use the result in (a) to find the survival function if}
+\begin{equation*}
+h(t)=\frac{\alpha t^{\alpha-1}}{\beta^\alpha}
+\end{equation*}
+
+The survival function is
+\begin{align*}
+S(t)&=\exp\left\{-\int_0^t\frac{\alpha u^{\alpha-1}}{\beta^\alpha}du\right\}\\
+&=\exp\left\{-\left.\frac{u^\alpha}{\beta^\alpha}\right|_{u=0}^t\right\}\\
+&=\exp\left\{-\frac{t^\alpha}{\beta^\alpha}+\frac{0^\alpha}{\beta^\alpha}\right\}\\
+&=\exp\left\{-\left(\frac{t}{\beta}\right)^\alpha\right\}
+\end{align*}
+
+\item%c
+{\it Find the probability density function for survival time given the survival
+function you found in part (b).}
+
+The cumulative probability density function for survival time is
+\begin{align*}
+F(t)&=P(\text{dies before time }t)\\
+&=1-P(\text{survives past time }t)\\
+&=1-S(t)\\
+&=1-\exp\left\{-\left(\frac{t}{\beta}\right)^\alpha\right\}
+\end{align*}
+for \(t>0\), so the probability density function is
+\begin{align*}
+f(t)&=\frac{d}{dt}F(t)\\
+&=\frac{\alpha t^{\alpha-1}}{\beta^\alpha}
+\exp\left\{-\left(\frac{t}{\beta}\right)^\alpha\right\}
+\end{align*}
+for \(t>0\), and zero elsewhere.
+
+\end{enumerate}
+
+\end{enumerate}
+
+\end{document}
