@@ -1,0 +1,432 @@
+\documentclass[11pt]{article}
+\usepackage{fullpage,graphicx,float,amsmath,enumitem,fancyhdr,tikz}
+
+\setlist{parsep=5.5pt}
+\setlength{\parindent}{0pt}
+
+\newcommand\assignment{Stat 525 Homework 4}
+\newcommand\myname{Kenny Flagg}
+\newcommand\duedate{October 3, 2016}
+
+\pagestyle{fancy}
+\lhead{\assignment}
+\chead{\duedate}
+\rhead{\myname}
+\setlength{\headheight}{18pt}
+\setlength{\headsep}{2pt}
+
+\title{\assignment}
+\author{\myname}
+\date{\duedate}
+
+\begin{document}
+\maketitle
+
+<<setup, echo = FALSE, message = FALSE, cache = FALSE>>=
+library(knitr)
+library(extrafont)
+opts_chunk$set(echo = FALSE, comment = NA, fig.align = 'center',
+               fig.width = 6.5, fig.height = 3, fig.pos = 'H',
+               size = 'footnotesize', dev = 'pdf',
+               dev.args = list(family = 'CM Roman', pointsize = 11))
+knit_theme$set('print')
+
+library(xtable)
+options(xtable.table.placement = 'H', width = 80,
+        scipen = 3, show.signif.stars = FALSE)
+
+library(Epi)
+
+set.seed(2745)
+@
+
+\begin{enumerate}
+
+\item%1
+{\it For \(2 \times 2\) tables show that \(\widehat{RR}=1\) when computed using
+the estimated expected counts \(\widehat{E}_{ij}\). That is, show that the
+expected counts satisfy the null hypothesis of independence. You can assume
+population based sampling with the total sample size fixed.}
+
+Generally,
+\begin{equation*}
+\widehat{RR} = \frac{\frac{a}{a+b}}{\frac{c}{c+d}}.
+\end{equation*}
+Replacing the cell counts with their expectations under independence,
+\begin{align*}
+\widehat{RR} &= \frac{\frac{\widehat{E}_{11}}
+{\widehat{E}_{11}+\widehat{E}_{12}}}
+{\frac{\widehat{E}_{21}}{\widehat{E}_{21}+\widehat{E}_{22}}} \\
+&= \frac{\frac{n\widehat{P}(D)\widehat{P}(E)}
+{n\widehat{P}(D)\widehat{P}(E) + n\widehat{P}(\overline{D})\widehat{P}(E)}}
+{\frac{n\widehat{P}(D)\widehat{P}(\overline{E})}
+{n\widehat{P}(D)\widehat{P}(\overline{E})
++ n\widehat{P}(\overline{D})\widehat{P}(\overline{E})}} \\
+&= \frac{\frac{\widehat{P}(D)}{\widehat{P}(D)
++ \widehat{P}(\overline{D})}}
+{\frac{\widehat{P}(D)}{\widehat{P}(D) + \widehat{P}(\overline{D})}} \\
+&= 1.
+\end{align*}
+
+\item%2
+{\it We will examine the skewness of the estimator of relative risk and how the
+log transformation helps via simulation. For the simulation
+\(RR = 0.4/0.2 = 2\). We will simulate 5000 values of \(\widehat{p}_{1}\) and
+\(\widehat{p}_{2}\) based on samples of size 100.}
+
+\begin{enumerate}
+
+\item%a
+{\it The R-code below will do this for us and plot the results. Discuss.}
+
+<<prob2a1, echo = TRUE>>=
+p1.hat <- rbinom(5000, 100, 0.4) / 100
+p2.hat <- rbinom(5000, 100, 0.2) / 100
+RR.hat <- p1.hat / p2.hat
+log.RR.hat <- log(RR.hat)
+par(mfrow = c(1, 2))
+hist(RR.hat, prob = TRUE, main = 'Relative Risk', breaks = 50)
+hist(log.RR.hat, prob = TRUE, main = 'Log Relative Risk', breaks = 50)
+@
+
+The distribution of \(\widehat{RR}\) values has a noticeable long right tail,
+so even for this large of a sample, the normal distribution is a poor
+approximation of the sampling distribution. In constrast, the distribution of
+\(\log\left(\widehat{RR}\right)\) values is much more symmetric (although the
+right tail is heavier than the left). If we want to use the normal distribution
+to create an approximate confidence interval or make inference, we get a better
+approximation by working on the log scale.
+
+\item%b
+{\it Compute the variance of the 5000 simulated values of
+\(\log(\widehat{RR})\) you got in part (a) and compare to the Delta Method
+approximate variance formula. Discuss.}
+
+<<prob2a2, echo = TRUE>>=
+var(log.RR.hat)
+@
+
+The variance of the simulated values is
+<<prob2a3, results = 'asis'>>=
+cat(sprintf('%.4f,', var(log.RR.hat)))
+@
+which is slightly larger than the delta-method approximation,
+\begin{align*}
+\mathrm{Var}\left(\log\left(\widehat{RR}\right)\right)
+&= \mathrm{Var}\left(\log\left(\widehat{p_1}\right)\right)
++ \mathrm{Var}\left(\log\left(\widehat{p_2}\right)\right) \\
+&= \frac{1-p_{1}}{n_{E}p_{1}} + \frac{1-p_{2}}{n_{\overline{E}}p_{2}} \\
+&= \frac{1-0.4}{100 \times 0.4} + \frac{1-0.2}{100 \times 0.2} \\
+&= 0.055,
+\end{align*}
+but the difference is probably not large enough to affect our inferences.
+
+\end{enumerate}
+
+\pagebreak
+\item%3
+{\it This example involves hypothetical data collected in a case-control
+design.}
+
+\begin{enumerate}
+
+\item%a
+{\it A \(2 \times 2\) table giving the relationship between exposure and
+disease is shown below.}
+\begin{center}\begin{tabular}{c|cc|c}
+& \(D\) & \(\overline{D}\) & \\
+\hline
+\(E\) & 30 & 12 & 42 \\
+\(\overline{E}\) & 70 & 88 & 158 \\
+\hline
+& 100 & 100 & 200
+\end{tabular}\end{center}
+{\it Estimate the ratio of the odds of disease given exposure to the odds given
+no exposure (give me both the point estimate and an approximate 95\% CI).}
+
+<<prob3a1, echo = TRUE>>=
+DE <- cbind(D = c(E = 30, E.bar =  70), D.bar = c(E = 12, E.bar = 88))
+twoby2(DE, alpha = 0.05)
+@
+
+The odds of disease given exposure are estimated to be 3.14 times larger than
+the odds of disease given no exposure. An approximate 95\% Wald confidence
+interval for the true odds ratio is (1.50, 6.58).
+
+\item%b
+{\it Below are two tables: one showing the distribution of cases and controls
+by age and one showing the distribution of exposed and unexposed by age.
+Investigate the association between age and exposure status and age and disease
+status. Again give point estimates and approximate 95\% CIs for odds ratios.}
+\begin{center}\begin{tabular}{c|cc|c}
+& \(D\) & \(\overline{D}\) & \\
+\hline
+\(< 40\) & 50 & 80 & 130 \\
+\(\geq 40\) & 50 & 20 & 70 \\
+\hline
+& 100 & 100 & 200
+\end{tabular}\end{center}
+\begin{center}\begin{tabular}{c|cc|c}
+& \(E\) & \(\overline{E}\) & \\
+\hline
+\(< 40\) & 12 & 118 & 130 \\
+\(\geq 40\) & 30 & 40 & 70 \\
+\hline
+& 42 & 158 & 200
+\end{tabular}\end{center}
+
+\textbf{Disease and age:}
+
+<<prob3b1, echo = TRUE>>=
+D.age <- cbind(D = c(`< 40` = 50, `>= 40` =  50), D.bar = c(`< 40` = 80, `>= 40` = 20))
+twoby2(D.age, alpha = 0.05)
+@
+
+The odds of disease given that the person is under 40 are estimated to be 0.250
+times the odds of disease given that the person is at least 40, with an
+approximate 95\% CI of (0.136, 0.468).
+
+\textbf{Exposure and age:}
+
+<<prob3b2, echo = TRUE>>=
+E.age <- cbind(E = c(`< 40` = 12, `>= 40` =  30), E.bar = c(`< 40` = 118, `>= 40` = 40))
+twoby2(E.age, alpha = 0.05)
+@
+
+The odds of exposure given that the person is under 40 are estimated to be
+0.136 times the odds of exposure given that the person is at least 40, with an
+approximate 95\% CI of (0.0634, 0.290).
+
+\pagebreak
+\item%c
+{\it Stratifying on age yields the two table below. Analyze these separately.
+Report the estimated odds ratios and associated 95\% CIs.}
+
+\begin{center}\begin{tabular}{c|cc|c}
+\multicolumn{4}{c}{\(\text{Age} < 40\)}\\
+& \(D\) & \(\overline{D}\) & \\
+\hline
+\(E\) & 5 & 6 & 11 \\
+\(\overline{E}\) & 45 & 74 & 119 \\
+\hline
+& 50 & 80 & 130
+\end{tabular}\end{center}
+\begin{center}\begin{tabular}{c|cc|c}
+\multicolumn{4}{c}{\(\text{Age} \geq 40\)}\\
+& \(D\) & \(\overline{D}\) & \\
+\hline
+\(E\) & 25 & 6 & 31 \\
+\(\overline{E}\) & 25 & 14 & 39 \\
+\hline
+& 50 & 20 & 70
+\end{tabular}\end{center}
+
+\textbf{Age $<$ 40:}
+
+<<prob3c1, echo = TRUE>>=
+DE.under40 <- cbind(D = c(E = 5, E.bar =  45), D.bar = c(E = 6, E.bar = 74))
+twoby2(DE.under40, alpha = 0.05)
+@
+
+For individuals under 40, the odds of disease given exposure are estimated to
+be 1.37 times the odds of disease given no exposure, with an approximate 95\%
+CI of (0.395, 4.75).
+
+\textbf{Age $\geq$ 40:}
+
+<<prob3c2, echo = TRUE>>=
+DE.atleast40 <- cbind(D = c(E = 25, E.bar =  25), D.bar = c(E = 6, E.bar = 14))
+twoby2(DE.atleast40, alpha = 0.05)
+@
+
+For individuals who are at least 40, the odds of disease given exposure are
+estimated to be 2.33 times the odds of disease given no exposure, with an
+approximate 95\% CI of (0.773, 7.05).
+
+\item%d
+{\it Is there evidence of confounding? Why or why not?}
+
+There is evidence of confounding. Age appears to be related to both disease
+and exposure because the confidence intervals in (b) do not include 1.
+Furthermore the pooled results disagree with the results from stratifying by
+age -- in part (a) there appeared to be an association between exposure and
+disease, but this association disappears in part (c) when conditioning on age.
+
+\end{enumerate}
+
+\item%4
+{\it Problem 8.3 on page 119.}
+
+\textbf{Assuming no direct effect of respiratory conditions on birthweight:}
+
+\begin{center}\begin{tikzpicture}
+\draw [ultra thick] (0, 0) rectangle (5, 1);
+\node at (2.5, 0.5) {smoking};
+\draw [ultra thick] (10, 0) rectangle (15, 1);
+\node at (12.5, 0.5) {birthweight};
+\draw [ultra thick] (0, 4) rectangle (5, 5);
+\node at (2.5, 4.5) {respiratory conditions};
+\draw [ultra thick] (10, 4) rectangle (15, 5);
+\node at (12.5, 4.5) {tuberculosis};
+\draw [->, ultra thick] (5, 0.5) -- (10, 0.5);
+\draw [->, ultra thick] (2.5, 1) -- (2.5, 4);
+\draw [->, ultra thick] (10, 4.5) -- (5, 4.5);
+\draw [->, ultra thick] (12.5, 4) -- (12.5, 1);
+\end{tikzpicture}\end{center}
+
+\pagebreak
+Removing the paths leaving smoking:
+
+\begin{center}\begin{tikzpicture}
+\draw [ultra thick] (0, 0) rectangle (5, 1);
+\node at (2.5, 0.5) {smoking};
+\draw [ultra thick] (10, 0) rectangle (15, 1);
+\node at (12.5, 0.5) {birthweight};
+\draw [ultra thick] (0, 4) rectangle (5, 5);
+\node at (2.5, 4.5) {respiratory conditions};
+\draw [ultra thick] (10, 4) rectangle (15, 5);
+\node at (12.5, 4.5) {tuberculosis};
+\draw [->, ultra thick] (10, 4.5) -- (5, 4.5);
+\draw [->, ultra thick] (12.5, 4) -- (12.5, 1);
+\end{tikzpicture}\end{center}
+
+There are no unblocked backdoor paths from birthweight to smoking so the
+association is not confounded.
+
+Stratifying on respiratory conditions:
+
+\begin{center}\begin{tikzpicture}
+\draw [ultra thick] (0, 0) rectangle (5, 1);
+\node at (2.5, 0.5) {smoking};
+\draw [ultra thick] (10, 0) rectangle (15, 1);
+\node at (12.5, 0.5) {birthweight};
+\draw [ultra thick] (10, 4) rectangle (15, 5);
+\node at (12.5, 4.5) {tuberculosis};
+\draw [ultra thick] (5, 1) -- (10, 4);
+\draw [->, ultra thick] (12.5, 4) -- (12.5, 1);
+\end{tikzpicture}\end{center}
+
+Respiratory conditions was a collider in the original graph, so stratifying
+on respiratory conditions results in tuberculosis becoming a confounder.
+
+\textbf{Assuming a direct effect of respiratory conditions on birthweight:}
+
+\begin{center}\begin{tikzpicture}
+\draw [ultra thick] (0, 0) rectangle (5, 1);
+\node at (2.5, 0.5) {smoking};
+\draw [ultra thick] (10, 0) rectangle (15, 1);
+\node at (12.5, 0.5) {birthweight};
+\draw [ultra thick] (0, 4) rectangle (5, 5);
+\node at (2.5, 4.5) {respiratory conditions};
+\draw [ultra thick] (10, 4) rectangle (15, 5);
+\node at (12.5, 4.5) {tuberculosis};
+\draw [->, ultra thick] (5, 0.5) -- (10, 0.5);
+\draw [->, ultra thick] (2.5, 1) -- (2.5, 4);
+\draw [->, ultra thick] (10, 4.5) -- (5, 4.5);
+\draw [->, ultra thick] (12.5, 4) -- (12.5, 1);
+\draw [->, ultra thick] (5, 4) -- (10, 1);
+\end{tikzpicture}\end{center}
+
+Removing the paths leaving smoking:
+
+\begin{center}\begin{tikzpicture}
+\draw [ultra thick] (0, 0) rectangle (5, 1);
+\node at (2.5, 0.5) {smoking};
+\draw [ultra thick] (10, 0) rectangle (15, 1);
+\node at (12.5, 0.5) {birthweight};
+\draw [ultra thick] (0, 4) rectangle (5, 5);
+\node at (2.5, 4.5) {respiratory conditions};
+\draw [ultra thick] (10, 4) rectangle (15, 5);
+\node at (12.5, 4.5) {tuberculosis};
+\draw [->, ultra thick] (10, 4.5) -- (5, 4.5);
+\draw [->, ultra thick] (12.5, 4) -- (12.5, 1);
+\draw [->, ultra thick] (5, 4) -- (10, 1);
+\end{tikzpicture}\end{center}
+
+There are no unblocked backdoor paths from birthweight to smoking so that
+association is not confounded by another variable. Note however that
+tuberculosis confounds the association between respiratory conditions and
+birthweight.
+
+Stratifying on respiratory conditions:
+
+\begin{center}\begin{tikzpicture}
+\draw [ultra thick] (0, 0) rectangle (5, 1);
+\node at (2.5, 0.5) {smoking};
+\draw [ultra thick] (10, 0) rectangle (15, 1);
+\node at (12.5, 0.5) {birthweight};
+\draw [ultra thick] (10, 4) rectangle (15, 5);
+\node at (12.5, 4.5) {tuberculosis};
+\draw [ultra thick] (5, 1) -- (10, 4);
+\draw [->, ultra thick] (12.5, 4) -- (12.5, 1);
+\end{tikzpicture}\end{center}
+
+Again, stratifying on respiratory conditions leads to confounding of smoking
+with tuberculosis. To avoid confounding, we would need to condition on
+tuberculosis as well.
+
+\item%5
+{\it STAT 525 Students: Using the Delta Method confirm the variance formula for
+\(\log\left[\widehat{OR}\right]\).}
+
+First, note that
+\begin{align*}
+\frac{d}{dp}\left[\log\left(\frac{\widehat{p}}{1-\widehat{p}}\right)\right]
+&= \frac{d}{dp}\left[\log\left(\widehat{p}\right)
+-\log\left({1-\widehat{p}}\right)\right] \\
+&= \frac{1}{\widehat{p}} + \frac{1}{1-\widehat{p}} \\
+&= \frac{1}{\widehat{p}\left(1-\widehat{p}\right)},
+\end{align*}
+so
+\begin{align*}
+\widehat{\mathrm{Var}}\left[\log\left(\frac{\widehat{p}}
+{1-\widehat{p_{1}}}\right)\right]
+&\approx \left(\frac{1}{\widehat{p}\left(1-\widehat{p}\right)}\right)^2
+\widehat{\mathrm{Var}}\left(\widehat{p}\right) \\
+&= \left(\frac{1}{\widehat{p}\left(1-\widehat{p}\right)}\right)^2
+\frac{\widehat{p}\left(1-\widehat{p}\right)}{n} \\
+&= \frac{1}{n\widehat{p}\left(1-\widehat{p}\right)}.
+\end{align*}
+Then
+\begin{align*}
+\widehat{\mathrm{Var}}\left[\log\left(\widehat{OR}\right)\right]
+&=\widehat{\mathrm{Var}}\left[\log\left(\frac{\widehat{p_{1}}}
+{1-\widehat{p_{1}}}\right)\right]
++ \widehat{\mathrm{Var}}\left[\log\left(\frac{\widehat{p_{2}}}
+{1-\widehat{p_{2}}}\right)\right] \\
+&= \frac{1}{n_{E}\widehat{p_{1}}\left(1-\widehat{p_{1}}\right)}
++ \frac{1}{n_{\overline{E}}\widehat{p_{2}}\left(1-\widehat{p_{2}}\right)} \\
+&= \frac{1}{(a+b)\left(\frac{a}{a+b}\right)\left(\frac{b}{a+b}\right)}
++ \frac{1}{(c+d)\left(\frac{c}{c+d}\right)\left(\frac{d}{c+d}\right)} \\
+&= \frac{a+b}{ab} + \frac{c+d}{cd} \\
+&= \frac{b}{ab} + \frac{a}{ab} + \frac{d}{cd} + \frac{c}{cd} \\
+&= \frac{1}{a} + \frac{1}{b} + \frac{1}{c} + \frac{1}{d}.
+\end{align*}
+
+\item%6
+{\it STAT 525 Students: We saw one version of the formula for \(X^2\) as}
+\begin{equation*}
+X^2=\sum_{i=1}^{I}\sum_{j=1}^{J}\frac{\left(n_{ij}-\widehat{E}_{ij}\right)^2}
+{\widehat{E}_{ij}}
+\end{equation*}
+{\it This can be reexpressed as}
+\begin{equation*}
+X^2=n\left[\sum_{i=1}^{I}\sum_{j=1}^{J}\frac{\left(\frac{n_{ij}}{n}
+-\frac{n_{D}n_{E}}{n^2}\right)^2}{\frac{n_{D}n_{E}}{n^2}}\right]
+\end{equation*}
+{\it Discuss the implications of this as \(n\) increases while all \(n_{ij}/n\)
+remain constant.}
+
+Note that
+\begin{equation*}
+\frac{n_{D}n_{E}}{n^2} = \left(\frac{n_{11}}{n}+\frac{n_{21}}{n}\right)
+\left(\frac{n_{11}}{n}+\frac{n_{12}}{n}\right)
+\end{equation*}
+so the terms inside the summation depend only on the \(n_{ij}/n\). Thus the
+sum is constant, so \(X^2\) is proportional to \(n\). This means that, as \(n\)
+increases, it becomes easier to reject the null hypothesis of independence, so
+with very large samples we should expect to find evidence of an association.
+
+\end{enumerate}
+
+\end{document}
