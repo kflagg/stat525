@@ -107,9 +107,7 @@ var(log.RR.hat)
 @
 
 The variance of the simulated values is
-<<prob2a3, results = 'asis'>>=
-cat(sprintf('%.4f,', var(log.RR.hat)))
-@
+\Sexpr{round(var(log.RR.hat), 4)}
 which is slightly larger than the delta-method approximation,
 \begin{align*}
 \mathrm{Var}\left(\log\left(\widehat{RR}\right)\right)

@@ -1,0 +1,268 @@
+\documentclass[11pt]{article}
+\usepackage{fullpage,graphicx,float,amsmath,enumitem,fancyhdr}
+
+\setlist{parsep=5.5pt}
+\setlength{\parindent}{0pt}
+
+\newcommand\assignment{Stat 525 Homework 5}
+\newcommand\myname{Kenny Flagg}
+\newcommand\duedate{October 10, 2016}
+
+\pagestyle{fancy}
+\lhead{\assignment}
+\chead{\duedate}
+\rhead{\myname}
+\setlength{\headheight}{18pt}
+\setlength{\headsep}{2pt}
+
+\title{\assignment}
+\author{\myname}
+\date{\duedate}
+
+\begin{document}
+\maketitle
+
+<<setup, echo = FALSE, message = FALSE, cache = FALSE>>=
+library(knitr)
+library(extrafont)
+opts_chunk$set(echo = FALSE, comment = NA, show.signif.stars = FALSE,
+               fig.align = 'center', fig.width = 6.5, fig.height = 3,
+               fig.pos = 'H', size = 'footnotesize', dev = 'pdf',
+               dev.args = list(family = 'CM Roman', pointsize = 11))
+knit_theme$set('print')
+
+library(xtable)
+options(xtable.table.placement = 'H', width = 80, scipen = 1)
+
+library(Epi)
+
+source('../.dependencies/WoolfCMH.r')
+source('../.dependencies/BreslowDay.r')
+@
+
+\begin{enumerate}
+
+\item%1
+{\it The text defined multiplicative interaction in terms of \(RR\) on pages
+148 and 149. Jewell points out on page 149 that a lack of multiplicative
+interaction based on OR implies}
+\begin{equation*}
+\frac{p_{11}/(1-p_{11})}{p_{01}/(1-p_{01})}
+=\frac{p_{10}/(1-p_{10})}{p_{00}/(1-p_{00})}
+\end{equation*}
+{\it Pencil through the algebra to show this, and comment on what it means.}
+
+By definition,
+\begin{equation*}
+OR_{11} = \frac{p_{11}/(1-p_{11})}{p_{00}/(1-p_{00})}.
+\end{equation*}
+If we assume no multiplicative interaction,
+\begin{align*}
+OR_{11} &= OR_{10} \times OR_{01} \\
+\frac{p_{11}/(1-p_{11})}{p_{00}/(1-p_{00})}
+&= \frac{p_{10}/(1-p_{10})}{p_{00}/(1-p_{00})}
+\times \frac{p_{01}/(1-p_{01})}{p_{00}/(1-p_{00})} \\
+\frac{p_{11}/(1-p_{11})}{p_{00}/(1-p_{00})}
+\times \frac{p_{00}/(1-p_{00})}{p_{01}/(1-p_{01})}
+&= \frac{p_{10}/(1-p_{10})}{p_{00}/(1-p_{00})} \\
+\frac{p_{11}/(1-p_{11})}{p_{01}/(1-p_{01})}
+&= \frac{p_{10}/(1-p_{10})}{p_{00}/(1-p_{00})}
+\end{align*}
+which means that the first exposure variable has the same association with the
+odds of disease regardless of the level of the second exposure variable.
+
+\pagebreak
+\item%2
+{\it Researchers in Georgia collected data on death penalty sentencing in cases
+with black defendants. The data included the race of the victim (White or
+Black), and types of murder (Aggravation Level from 1 to 6). Aggravation level
+of 1 was unaggravated (e.g. barroom brawl) and 6 was most aggravated (e.g.
+vicious crimes involving torture). The data are shown below. I have modified
+the original data a bit to avoid a numerical issue (we may come back to that if
+we have time but the change does not impact the overall conclusion). Is there
+evidence that black murderers of white victims are more likely to receive the
+death penalty than black murderers of black victims after accounting for the
+aggravation level of the crime?}
+
+<<prob2, echo = TRUE>>=
+# The data
+death.CMH <- array(c(2, 1, 60, 181, 2, 1, 15, 21, 6, 2, 7, 9, 9, 2, 3, 4, 9, 4, 1, 3, 17, 4, 1, 1),
+                   dim = c(2,2,6), dimnames = list(c("White","Black"), c("Death","NoDeath"),
+                     c("AgLevel 1","AgLevel 2","AgLevel 3","AgLevel 4","AgLevel 5","AgLevel 6")))
+@
+
+\begin{enumerate}
+
+\item%a
+{\it Pool over Aggravation Level and estimate the the ratio of the odds of a
+white-victim murderer receiving the death penalty relative to the odds of a
+black victim murder receiving the death penalty along with an approximate 95\%
+confidence interval.}
+
+<<prob2a, echo = TRUE>>=
+death.victim <- apply(death.CMH, c(1, 2), sum)
+twoby2(death.victim)
+@
+
+The odds of receiving the death penalty for a black murderer of a white victim
+are estimated to be 8.09 times larger than the odds of receiving the death
+penalty for a black murderer of a black victim, with a 95\% confidence interval
+of 4.23 to 15.5.
+
+\pagebreak
+\item%b
+{\it Give an estimate of the Odds Ratio adjusted for Aggravation Level along
+with an approximate 95\% confidence interval. Use the Cochran-Mantel-Haenszel
+method.}
+
+<<prob2b, echo = TRUE>>=
+WoolfCMH(death.CMH, alpha = 0.05)
+@
+
+The Cochran-Mantel-Haenzel estimate of the odds ratio, accounting for
+aggravation level, is 4.671 with a 95\% confidence interval of 1.80 to 12.1.
+
+\item%c
+{\it One key assumption of the CMH method is homogeneity or no interaction
+between race and aggravation level, i.e. the aggravation level specific odds
+ratios are all equal to one another. Is this assumption reasonable here?
+Justify your answer. Use the Breslow-Day test to investigate.}
+
+<<prob2c, echo = TRUE>>=
+breslowday.test(death.CMH)
+@
+
+The Breslow-Day statistic is \(\chi^2_{5}=0.2863\) with
+\(\text{p-value}=0.9979\), giving essentially no evidence that the odds ratio
+differs by aggravation level. It is reasonable to assume homogeneity and use
+the Cochran-Mantel-Haenszel method.
+
+\pagebreak
+\item%d
+{\it Based on these results which Odds Ratio would you report (1) the pooled
+odds ratio, (2) the Odds Ratio adjusted for Aggravation Level, or (3) the
+stratum level Odds Ratios? Justify your answer.}
+
+<<prob2d, echo = TRUE>>=
+death.agg <- t(apply(death.CMH, 2:3, sum))
+print(death.agg)
+chisq.test(death.agg, simulate.p.value = TRUE)
+@
+
+We should report the adjusted odds ratio. There is no evidence of an
+interaction, so we do not need to report separate odds ratios. There is
+evidence of an association between aggravation level and whether the defendent
+received the death penalty, so the adjusted odds ratio will have lower variance
+than the pooled odds ratio.
+
+\end{enumerate}
+
+\item%3
+{\it The table below contains data from a cohort study of smoking and lung
+cancer. Asbestos exposure was another risk factor of interest. The numbers in
+the table are deaths from lung cancer per 100000 people, i.e. they are
+\(P_{ij}\) values times 100000. You can work on this scale to answer the
+questions below.}
+\begin{center}\begin{tabular}{c|cc}
+& Asbestos No & Asbestos Yes \\
+\hline
+Cig No & 11.3 & 58.4 \\
+Cig Yes & 112.6 & 601.6
+\end{tabular}\end{center}
+
+\begin{enumerate}
+
+\item%a
+{\it What would you expect the value to be in the lower right cell if the
+relation between asbestos and smoking were additive?}
+
+The expected number of deaths per 100,000 would be
+\(122.6 + (58.4 - 11.3) = 169.7\).
+
+\item%b
+{\it What would you expect the value to be in the lower right cell if the
+relation between asbestos and smoking were multiplicative?}
+
+The expected number of deaths per 100,000 would be
+\(122.6 \times \dfrac{58.4}{11.3} = 633.6\).
+
+\pagebreak
+\item%c
+{\it Is the observed value more indicative of an additive interaction or a
+multiplicative interaction? Is the interaction synergistic or antagonistic
+and why?}
+
+This is indicative of a multiplicative interaction because the observed value
+of 601.6 is closer to the expected value under multiplicative effects than to
+the expected value under additive effects. If we assume effects are additive,
+the observed asbestos effect for smokers (489.0) is about ten times as large as
+the observed asbestos effect for nonsmokers (47.1) which seems implausible.
+
+As a multiplicative effect, the interaction is antagonistic because the
+observed value is smaller than the expected value.
+
+\end{enumerate}
+
+\item%4
+{\it Problem 11.2 on page 177. The way he sets it up is confusing.}
+
+\begin{enumerate}
+
+\item%a
+{\it Ignore the exposure variable and just use the cases and controls. The R
+code below sets up the data for you.}
+
+<<prob4a1, echo = TRUE>>=
+cases <- c(59, 54, 53, 61, 61)
+n <- c(192, 204, 173, 181, 118)
+@
+
+{\it Do what he asks in the second paragraph.}
+
+<<prob4a2, echo = TRUE>>=
+prop.test(cases, n)
+@
+
+For the overall test of association, we have very strong evidence
+(\(\chi^2_{\Sexpr{prop.test(cases, n)$parameter}}
+= \Sexpr{round(prop.test(cases, n)$statistic, 2)}\), \(\text{p-value}
+= \Sexpr{round(prop.test(cases, n)$p.value, 4)}\)) that tuberculosis
+prevalence differs among the age groups.
+
+<<prob4a3, echo = TRUE>>=
+prop.trend.test(cases, n)
+@
+
+There is very strong evidence
+(\(\chi^2_{\Sexpr{prop.trend.test(cases, n)$parameter}}
+= \Sexpr{round(prop.trend.test(cases, n)$statistic, 2)}\), \(\text{p-value} =
+\Sexpr{round(prop.trend.test(cases, n)$p.value, 4)}\)) that tuberculosis
+prevalence has a linear relationship with age.
+
+\pagebreak
+\item%b
+{\it Now using all the data in the table do what he asks in the third
+paragraph. You can just calculate age specific Odds Ratios using the ratio of
+cross products. Note that he is asking for a qualitative assessment only. You
+will just be looking at a simple graph and/or table.}
+
+<<prob4b, echo = TRUE, fig.height = 5>>=
+prob.11.2 <- data.frame(age = c('<25', '26-25', '36-45', '46-55', '>55'),
+                        a = c(8, 7, 12, 8, 15),
+                        b = c(7, 6, 3, 3, 1),
+                        c = c(51, 47, 41, 53, 46),
+                        d = c(126, 144, 117, 117, 56))
+prob.11.2$OR.hat <- with(prob.11.2, (a * d) / (b * c))
+plot(prob.11.2$OR.hat, main = 'Estimated Odds Ratio vs Age Group',
+     ylab = expression(widehat(OR)), xlab = 'Age', xaxt = 'n', ylim = c(0, 20))
+axis(1, at = 1:5, labels = prob.11.2$age)
+text(prob.11.2$OR.hat ~ I(1:5), labels = round(prob.11.2$OR.hat, 2), pos = 3)
+@
+
+There is a clear trend of higher estimated odds ratios with increasing age.
+
+\end{enumerate}
+
+\end{enumerate}
+
+\end{document}
