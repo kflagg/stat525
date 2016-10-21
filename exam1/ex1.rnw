@@ -1,0 +1,451 @@
+\documentclass[11pt]{article}
+\usepackage{fullpage,graphicx,float,amsmath,enumitem,fancyhdr,tikz}
+
+\setlist{parsep=5.5pt}
+\setlength{\parindent}{0pt}
+
+\newcommand\assignment{Stat 525 Midterm Exam}
+\newcommand\myname{Kenny Flagg}
+\newcommand\duedate{October 12, 2016}
+
+\pagestyle{fancy}
+\lhead{\assignment}
+\chead{\duedate}
+\rhead{\myname}
+\setlength{\headheight}{18pt}
+\setlength{\headsep}{2pt}
+
+\title{\assignment}
+\author{\myname}
+\date{\duedate}
+
+\begin{document}
+\maketitle
+
+<<setup, echo = FALSE, message = FALSE, cache = FALSE>>=
+library(knitr)
+library(extrafont)
+opts_chunk$set(echo = TRUE, comment = NA, show.signif.stars = FALSE,
+               fig.align = 'center', fig.width = 6.5, fig.height = 3,
+               fig.pos = 'H', size = 'footnotesize', dev = 'pdf',
+               dev.args = list(family = 'CM Roman', pointsize = 11))
+knit_theme$set('print')
+
+options(width = 80, scipen = 1)
+
+source('../.dependencies/WoolfCMH.r')
+source('../.dependencies/BreslowDay.r')
+@
+
+\begin{enumerate}
+
+\item%1
+{\it The figure below shows cases of a disease in a defined population of 50
+individuals. There are 5 cases fo a disease. The disease is fatal so the length
+of the lines shows the survival time.}
+\begin{center}
+\includegraphics[page=1,trim={2.65in 6.25in 2.8in 2.85in},clip]
+{BioStatExamOne.pdf}
+\end{center}
+
+\begin{enumerate}
+
+\item%a
+{\it What is the incidence proportion over the specified period of time?}
+
+The incidence proportion is
+\begin{equation*}
+\frac{2\text{ new cases}}{47\text{ at risk in January}}=0.04255
+\end{equation*}
+
+\item%b
+{\it What is the point prevalence in July?}
+
+The point prevalence in July is
+\begin{equation*}
+\frac{4\text{ diseased}}{49\text{ alive}}=0.08163
+\end{equation*}
+
+\item%c
+{\it What is the point prevalence in December?}
+
+The point prevalence in December is
+\begin{equation*}
+\frac{2\text{ diseased}}{47\text{ alive}}=0.04255
+\end{equation*}
+
+\end{enumerate}
+
+\pagebreak
+\item%2
+{\it The data are described in Problem 9.1 on pages 144-145 and the problem
+continues as Problem 10.3 on page 163. Refer. to the specific questions below.
+R code to load these data into R is attached.}
+
+<<prob2>>=
+# Problem 2 Data
+# Pooled Data
+TB.pool<-array(c(50,238,21,524),dim=c(2,2),
+dimnames=list(c("BiomassYes","BiomassNo"),c("Case","Control")))
+TB<-array(c(38,102,12,141,12,136,9,383),dim=c(2,2,2),
+dimnames=list(c("BiomassYes","BiomassNo"),c("Case","Control"),c("< 1000",">= 1000")))
+@
+
+\begin{enumerate}
+
+\item%a
+{\it Calculate the ratio of the odds of TB given exposure to biomass fuel over
+the odds of TB given no exposure for the pooled data. Also give an approximate
+95\% confidence interval and interpret in terms of the problem.}
+
+<<prob2a>>=
+pool.OR <- (TB.pool[1,1] * TB.pool[2,2]) / (TB.pool[2,1] * TB.pool[1,2])
+print(pool.OR)
+pool.logOR.SE <- sqrt(1/TB.pool[1,1] + 1/TB.pool[2,1] + 1/TB.pool[1,2] + 1/TB.pool[2,2])
+pool.CI <- pool.OR * exp(qnorm(c(0.025, 0.975)) * pool.logOR.SE)
+print(pool.CI)
+@
+
+The odds of TB for exposed individuals are estimated to be
+\Sexpr{formatC(pool.OR, format = 'fg', digits = 4, flag = '#')} times larger
+than the odds of TB for unexposed individuals. We are 95\% confident that the
+true odds ratio is between
+\Sexpr{paste(formatC(pool.CI, format = 'fg', digits = 4, flag = '#'),
+             collapse = ' and ')}.
+
+\item%b
+{\it Calculate the stratum specific (\(<\) 1000, \(\geq\) 1000 peso income)
+odds ratios. Again provide me with the approximate 95\% confidence intervals.}
+
+<<prob2b1>>=
+OR1 <- (TB[1,1,1] * TB[2,2,1]) / (TB[2,1,1] * TB[1,2,1])
+print(OR1)
+logOR1.SE <- sqrt(1/TB[1,1,1] + 1/TB[2,1,1] + 1/TB[1,2,1] + 1/TB[2,2,1])
+OR1.CI <- OR1 * exp(qnorm(c(0.025, 0.975)) * logOR1.SE)
+print(OR1.CI)
+@
+
+For individuals with monthly family incomes below 1,000 pesos, the odds of TB
+for exposed individuals are estimated to be
+\Sexpr{formatC(OR1, format = 'fg', digits = 4, flag = '#')} times larger
+than the odds of TB for unexposed individuals. We are 95\% confident that the
+true odds ratio is between
+\Sexpr{paste(formatC(OR1.CI, format = 'fg', digits = 4, flag = '#'),
+             collapse = ' and ')}.
+
+<<prob2b2>>=
+OR2 <- (TB[1,1,2] * TB[2,2,2]) / (TB[2,1,2] * TB[1,2,2])
+print(OR2)
+logOR2.SE <- sqrt(1/TB[1,1,2] + 1/TB[2,1,2] + 1/TB[1,2,2] + 1/TB[2,2,2])
+OR2.CI <- OR2 * exp(qnorm(c(0.025, 0.975)) * logOR2.SE)
+print(OR2.CI)
+@
+
+For individuals with monthly family incomes of 1,000 pesos or more, the odds of
+TB for exposed individuals are estimated to be
+\Sexpr{formatC(OR2, format = 'fg', digits = 4, flag = '#')} times
+larger than the odds of TB for unexposed individuals. We are 95\% confident
+that the true odds ratio is between
+\Sexpr{paste(formatC(OR2.CI, format = 'fg', digits = 4, flag = '#'),
+             collapse = ' and ')}.
+
+\item%c
+{\it Using the Cochran-Mantel-Haenzel approach provide me with an estimate of
+the common odds ratio adjusted for income along with an approximate 95\%
+confidence interval. Use the \texttt{mantelhaen.test} function.}
+
+<<prob2c>>=
+mantelhaen.test(TB)
+@
+
+Adjusting for income level, the estimated odds ratio is 4.158 with an
+approximate 95\% confidence interval of 2.402 to 7.199.
+
+\item%d
+{\it A key assumption of the CMH procedure is that there is no interaction. Is
+there any evidence of an interaction involving income and biomass fuel
+exposure? You can use the Breslow-Day test.}
+
+<<prob2d>>=
+breslowday.test(TB)
+@
+
+The Breslow-Day statistic is \(\chi^2_1=0.06887\) with
+\(\text{p-value }=0.7930\), so there is very little evidence of an interaction
+between income and exposure. It is safe to assume there is no interaction.
+
+\pagebreak
+\item%e
+{\it Based on the above which odds ratio would you present in, say, a final
+report and why? Filling in a table like the one below may help you with your
+answer.}
+\begin{center}\begin{tabular}{l|c|c}
+& \(OR\) & CI \\
+\hline
+Pooled & 5.242 & (3.079, 8.926) \\
+CMH & 4.158 & (2.402, 7.199) \\
+\(<\) 1000 & 4.377 & (2.180, 8.791) \\
+\(\geq\) 1000 & 3.755 & (1.548, 9.108)
+\end{tabular}\end{center}
+
+The Breslow-Day test results suggest interaction is not a problem, so we can
+report a single odds ratio. The pooled odds ratio is larger than the
+stratum-specific odds ratios. This is evidence of confounding so we should
+report the CMH odds ratio to adjust for confounding by income level.
+
+\end{enumerate}
+
+\item%3
+{\it Refer to Figure 8.6 on page 106 in the text. Assume that access to medical
+care has no influence on health condition.}
+
+\begin{enumerate}
+
+\item%a
+{\it Draw a new causal graph reflecting this assumption.}
+
+\begin{center}\begin{tikzpicture}
+\node at (0, 0) {Medical Care Access};
+\node [left] at (-5, 0) {SES};
+\node [right] at (5, 0) {Family History};
+\node [below] at (-2.5, -2) {Vaccination};
+\node [below] at (2.5, -2) {Health Condition};
+\draw [thick, ->] (-5, 0) -- (-2, 0);
+\draw [thick, ->] (-5.1, -0.25) -- (-2.75, -2);
+\draw [thick, ->] (0, -0.25) -- (-2.5, -2);
+\draw [thick, ->] (5, 0) -- (2, 0);
+\draw [thick, ->] (5.1, -0.25) -- (2.75, -2);
+\draw [thick, ->] (-1.4, -2.25) -- (1, -2.25);
+\end{tikzpicture}\end{center}
+
+\item%b
+{\it Is there any confounding of the relationship between vaccination and
+health condition? If so identify which of the 3 variables are confounders:
+socioeconomic status, access to medical care, and/or family history and explain
+why the confounding exists. If no confounding exists, explain why.}
+
+\begin{center}\begin{tikzpicture}
+\node at (0, 0) {Medical Care Access};
+\node [left] at (-5, 0) {SES};
+\node [right] at (5, 0) {Family History};
+\node [below] at (-2.5, -2) {Vaccination};
+\node [below] at (2.5, -2) {Health Condition};
+\draw [thick, ->] (-5, 0) -- (-2, 0);
+\draw [thick, ->] (-5.1, -0.25) -- (-2.75, -2);
+\draw [thick, ->] (0, -0.25) -- (-2.5, -2);
+\draw [thick, ->] (5, 0) -- (2, 0);
+\draw [thick, ->] (5.1, -0.25) -- (2.75, -2);
+\end{tikzpicture}\end{center}
+
+The path Health Condition \(\rightarrow\) Family History \(\rightarrow\)
+Medical Care Access \(\rightarrow\) Vaccination is the only unblocked backdoor
+path. Stratifying on Family history would remove this path because no pair of
+nodes have a common decendent through Family History. Therefore, Family History
+is a confounder, and the other variables are not confounders.
+
+\pagebreak
+\item%c
+{\it An investigation adjusts for access to medical care. Will their analysis
+of the relationship between vaccination and health condition be confounded? If
+so identify which of the remaining 2 are confounders: socioeconomic status
+and/or family history and explain why the confounding exists. If no confounding
+exists, explain why.}
+
+\begin{center}\begin{tikzpicture}
+\node [left] at (-5, 0) {SES};
+\node [right] at (5, 0) {Family History};
+\node [below] at (-2.5, -2) {Vaccination};
+\node [below] at (2.5, -2) {Health Condition};
+\draw [thick] (-5, 0) -- (5, 0);
+\draw [thick, ->] (-5.1, -0.25) -- (-2.75, -2);
+\draw [thick, ->] (5.1, -0.25) -- (2.75, -2);
+\end{tikzpicture}\end{center}
+
+If the investigator adjusts for Medical Care Access, there still exists an
+unblocked backdoor path Health Condition \(\rightarrow\) Family History
+\(\rightarrow\) SES \(\rightarrow\) Vaccination. SES and Family History are
+both confounders but controlling for either of these variables would remove the
+confounding.
+
+\end{enumerate}
+
+\item%4
+{\it A retrospective study of lung cancer and tobacco smoking in several
+English hospitals resulted in the following data.}
+
+<<prob4>>=
+# Problem 4
+LC<-array(c(7,55,489,475,293,38,61,129,570,431,154,12),dim=c(6,2),
+dimnames=list(c("None","<5","5-14","15-24","25-49","50+"),c("LCYes","LCNo")))
+print(LC)
+@
+
+\begin{enumerate}
+
+\item%a
+{\it Test for independence between lung cancer and smoking using the
+chi-squared test for independence. Interpret the results.}
+
+<<prob4a>>=
+# row totals
+n<-rowSums(LC)
+# number of lung cancer cases
+d<-LC[,1]
+prop.test(d,n)
+@
+
+The test statistic is \(\chi^2_{5}=137.72\) with \(\text{p-value}<0.0001\) so
+there is very strong evidence of an association between the number of
+cigarettes per day and lung cancer.
+
+\item%b
+{\it You should have found strong evidence of an association. Where does the
+independence break down and how?}
+
+<<prob4b>>=
+chisq.test(LC)$stdres
+@
+
+All of the standardised residuals are large (\(|r_{ij}|>3\)) except for the
+15-24 cigarettes per day group. People who don't smoke or who smoke fewer than
+15 cigarettes per day have lower risk of lung cancer than we would expect in
+the absence of association, while people who smoke 25 or more cigarettes a day
+have higher lung cancer risk than would be expected assuming no association.
+
+\item%c
+{\it Test for a trend in risk of lung cancer over smoking level. Interpret the
+results. Do the results of this test tell you anything about the direction of
+the trend?}
+
+<<prob4c>>=
+prop.trend.test(d,n)
+@
+
+The trend test statistic is \(\chi^2_{1}=129.23\) with
+\(\text{p-value}<0.0001\), giving very strong evidence that lung cancer rates
+have a linear trend with respect to the number of cigarettes smoked. This
+result alone does not provide any information about the direction of the trend,
+so we need to look at the estimated proportions output in part (a) to see that
+the trend is increasing.
+
+\item%d
+{\it Perform a goodness-of-fit test and give the results.}
+
+<<prob4d>>=
+pchisq(8.49, 4, lower.tail = FALSE)
+@
+
+The goodness-of-fit test statistic is \(\chi^2_{4}=137.23-129.23\) with
+\(\text{p-value}=0.07519\), weak evidence that a more complicated model would
+fit better than the linear trend. The linear trend describes the estimated
+proportions well, but there may be room for improvement.
+
+\end{enumerate}
+
+\item%5
+{\it An experiment on the efficacy of a vaccine was carried out on 215
+volunteers, 104 of which were randomly assigned to receive the vaccine with the
+rest receiving a placebo injection. The results were}
+\begin{center}\begin{tabular}{c|cc|c}
+& Caught Disease & Did Not Catch Disease & \\
+\hline
+Vaccine & 10 & 94 & 104 \\
+Placebo & 33 & 78 & 111 \\
+\hline
+& 43 & 172 &
+\end{tabular}\end{center}
+{\it Estimate the Absolute Risk Reduction and the Number Needed to Treat. Give
+approximate 95\% confidence intervals for these and interpret the results.}
+
+<<prob5>>=
+# Problem 5
+vaccine<-array(c(33,10,78,94),dim=c(2,2),dimnames=list(c("Placebo","Vaccine"),
+c("Disease","No Disease")))
+prop.test(vaccine[,1], rowSums(vaccine))
+@
+
+\(\widehat{ARR}=0.29730-0.09615=0.20115\) with approximate 95\% confidence
+interval (0.08965, 0.31263). Assuming the individuals in the vaccinated
+population and the individuals who receive placebos are otherwise similar, we
+expect a disease rate among people who receive the vaccine to be 0.20115 lower
+than the disease rate for individuals who take placebos.
+
+\(\widehat{NNT}=\dfrac{1}{0.20115}=4.971\) with an approximate 95\% confidence
+interval of \(\left(\dfrac{1}{0.31263}, \dfrac{1}{0.08965}\right)
+=(3.198, 11.15)\). For every additional 4.971 individuals who receive the
+vaccine, we expect one fewer case of the disease.
+
+\pagebreak
+\item%6
+{\it On Homework 4 you used the Delta Method to show that an approximation to
+the standard error of the MLE of the log of the odds}
+\begin{equation*}
+\log\left(\frac{\widehat{p}}{1-\widehat{p}}\right)
+\end{equation*}
+{\it was given by}
+\begin{equation*}
+SE\left[\log\left(\frac{\widehat{p}}{1-\widehat{p}}\right)\right]
+=\sqrt{\frac{1}{n\widehat{p}\left(1-\widehat{p}\right)}}
+\end{equation*}
+
+\begin{enumerate}
+
+\item%a
+{\it Assuming approximate normality and approximate unbiasedness of the
+estimator (not unreasonable for the asymptotic behavior of an MLE) show that an
+approximate 100(1 - \(\alpha\))\% Wald CI for the log of the odds is given by}
+\begin{equation*}
+\log\left(\frac{\widehat{p}}{1-\widehat{p}}\right)
+\pm z_{1-\alpha/2}/\sqrt{n\widehat{p}\left(1-\widehat{p}\right)}
+\end{equation*}
+
+For large \(n\),
+\begin{equation*}
+\log\left(\frac{\widehat{p}}{1-\widehat{p}}\right)
+\sim\mathrm{N}\left(\log\left(\frac{p}{1-p}\right),
+\frac{1}{np\left(1-p\right)}\right)
+\end{equation*}
+and therefore
+\begin{equation*}
+P\left[\left|\frac{\log\left(\frac{\widehat{p}}{1-\widehat{p}}\right)
+- \log\left(\frac{p}{1-p}\right)}
+{\sqrt{\frac{1}{np\left(1-p\right)}}}\right|<z_{1-\alpha/2}\right]
+\approx 1-\alpha
+\end{equation*}
+so
+\begin{equation*}
+P\left[\log\left(\frac{\widehat{p}}{1-\widehat{p}}\right)
+- \frac{z_{1-\alpha/2}}{\sqrt{n\widehat{p}\left(1-\widehat{p}\right)}}
+< \log\left(\frac{p}{1-p}\right)
+< \log\left(\frac{\widehat{p}}{1-\widehat{p}}\right)
++ \frac{z_{1-\alpha/2}}{\sqrt{n\widehat{p}\left(1-\widehat{p}\right)}}\right]
+\approx 1-\alpha
+\end{equation*}
+Thus \(\log\left(\dfrac{\widehat{p}}{1-\widehat{p}}\right)
+\pm z_{1-\alpha/2}/\sqrt{n\widehat{p}\left(1-\widehat{p}\right)}\) is an
+approximate 95\% confidence interval for
+\(\log\left(\dfrac{p}{1-p}\right)\).
+
+\item%b
+{\it Show how to use this interval to obtain and interval for \(p\) itself.}
+
+The inverse of \(\phi=\log\left(\dfrac{p}{1-p}\right)\) is
+\(p=\dfrac{\exp\left(\phi\right)}{1+\exp\left(\phi\right)}\). Applying the
+inverse to the endpoints of the interval from part (a),
+\begin{align*}
+\frac{\exp\left(\log\left(\frac{\widehat{p}}{1-\widehat{p}}\right)
+\pm\frac{z_{1-\alpha/2}}{\sqrt{n\widehat{p}\left(1-\widehat{p}\right)}}\right)}
+{1+\exp\left(\log\left(\frac{\widehat{p}}{1-\widehat{p}}\right)
+\pm\frac{z_{1-\alpha/2}}{\sqrt{n\widehat{p}\left(1-\widehat{p}\right)}}\right)}
+&=\frac{\left(\frac{\widehat{p}}{1-\widehat{p}}\right)\exp\left(
+\pm\frac{z_{1-\alpha/2}}{\sqrt{n\widehat{p}\left(1-\widehat{p}\right)}}\right)}
+{1+\left(\frac{\widehat{p}}{1-\widehat{p}}\right)\exp\left(
+\pm\frac{z_{1-\alpha/2}}{\sqrt{n\widehat{p}\left(1-\widehat{p}\right)}}\right)}
+\end{align*}
+so this is an approximate 95\% confidence interval for \(p\).
+
+\end{enumerate}
+
+\end{enumerate}
+
+\end{document}
