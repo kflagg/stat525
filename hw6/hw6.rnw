@@ -1,0 +1,299 @@
+\documentclass[11pt]{article}
+\usepackage{fullpage,graphicx,float,amsmath,enumitem,fancyhdr}
+
+\setlist{parsep=5.5pt}
+\setlength{\parindent}{0pt}
+
+\newcommand\assignment{Stat 525 Homework 6}
+\newcommand\myname{Kenny Flagg}
+\newcommand\duedate{October 24, 2016}
+
+\pagestyle{fancy}
+\lhead{\assignment}
+\chead{\duedate}
+\rhead{\myname}
+\setlength{\headheight}{18pt}
+\setlength{\headsep}{2pt}
+
+\title{\assignment}
+\author{\myname}
+\date{\duedate}
+
+\begin{document}
+\maketitle
+
+<<setup, echo = FALSE, message = FALSE, cache = FALSE>>=
+library(knitr)
+library(extrafont)
+opts_chunk$set(echo = TRUE, comment = NA, message = FALSE,
+               show.signif.stars = FALSE,
+               fig.align = 'center', fig.width = 6.5, fig.height = 3,
+               fig.pos = 'H', size = 'footnotesize', dev = 'pdf',
+               dev.args = list(family = 'CM Roman', pointsize = 11))
+knit_theme$set('print')
+
+#library(xtable)
+options(xtable.table.placement = 'H', width = 80, scipen = 2,
+        show.signif.stars = FALSE)
+
+source('../.dependencies/WoolfCMH.r')
+source('../.dependencies/BreslowDay.r')
+@
+
+\begin{enumerate}
+
+\item%1
+{\it The data are described in Problems 9.1 on pages 144-145 and the problem
+continues as Problem 10.3 on page 163. Refer to the specific questions below. R
+code to load these data into R is attached. Use logistic regression to answer
+the questions below.}
+
+\begin{enumerate}
+
+\item%a
+{\it Calculate the ratio of the odds of TB given exposure to biomass fuel over
+the odds of TB given no exposure for the pooled data. Also give an approximate
+95\% confidence interval and interpret in terms of the problem. The data you
+need are in \texttt{TB.pool}. Fit a logistic regression model with just biomass
+as the explanatory variable. Compare the results to those you got on the
+midterm exam.}
+
+<<prob1a>>=
+TB <- cbind(c(38, 102, 12, 136), c(12, 141, 9, 383))
+biomass <- rep(c('Yes', 'No'), 2)
+income <- rep(c('<1000', '>=1000'), each = 2)
+TB.data <- data.frame(biomass, income, cases = TB[,1], controls = TB[,2])
+fit1 <- glm(cbind(cases,controls)~biomass, family=binomial, data=TB.data)
+summary(fit1)$coefficients
+confint.default(fit1)
+exp(summary(fit1)$coefficients['biomassYes', 'Estimate'])
+exp(confint.default(fit1)['biomassYes',])
+@
+
+The odds of TB for individuals exposed to biomass are estimated to be
+\Sexpr{signif(exp(summary(fit1)$coefficients['biomassYes', 'Estimate']), 4)}
+times larger than the odds of TB for unexposed individuals. We are 95\%
+confident that the true odds ratio is between
+\Sexpr{paste(signif(exp(confint.default(fit1)['biomassYes',]), 4),
+             collapse = ' and ')}.
+The point estimate and confidence interval are identical to the cross-product
+odds ratio and its Wald interval.
+
+\item%b
+{\it Provide me with an estimate of the common odds ratio adjusted for income
+along with an approximate 95\% interval. Fit a logistic regression model with
+biomass and income as explanatory variables. Compare these results to the
+those you got using the CMH method on the exam.}
+
+<<prob1b>>=
+fit2 <- glm(cbind(cases,controls)~biomass+income, family=binomial, data=TB.data)
+summary(fit2)$coefficients
+confint.default(fit2)
+exp(summary(fit2)$coefficients['biomassYes', 'Estimate'])
+exp(confint.default(fit2)['biomassYes',])
+@
+
+After adjusting for income level, the odds of TB for individuals exposed to
+biomass are estimated to be
+\Sexpr{signif(exp(summary(fit2)$coefficients['biomassYes', 'Estimate']), 4)}
+times larger than the odds of TB for unexposed individuals. We are 95\%
+confident that the true odds ratio is between
+\Sexpr{paste(signif(exp(confint.default(fit2)['biomassYes',]), 4),
+             collapse = ' and ')}.
+The point estimate is slightly smaller than the CMH adjusted odds ratio (which
+was 4.158) and the confidence interval is shifted down accordingly.
+
+\item%c
+{\it Fit a model assuming an interaction between biomass and income. Use a
+drop-in-deviance test to assess the evidence for the existence of an
+interaction. Compare the results to the results you got from the Breslow-Day
+method on the exam.}
+
+<<prob1c>>=
+fit3 <- glm(cbind(cases,controls)~biomass*income,family=binomial,data=TB.data)
+anova(fit2, fit3, test = 'Chisq')
+@
+
+With \(\chi^2_{1}=0.0711\) and \(\text{p-value}=0.7897\) there is no evidence 
+of an interaction between biomass exposure and income level. This agrees with
+the Breslow-Day result, which had \(\chi^2_{1}=0.0689\) and
+\(\text{p-value}=0.7930\).
+
+\item%d
+{\it Summarize the results as you did on the exam.}
+
+There is little to no evidence that the effect of biomass fuel exposure on
+tuberculosis occurrence differs between individuals with a monthly family income
+below 1,000 pesos and individuals with monthly family income of at least
+1,000 pesos (\(\chi^2_{1}=0.0711\), \(\text{p-value}=0.7897\)). There is
+evidence that biomass fuel exposure is associated with higher tuberculosis
+rates; adjusting for income level, the odds of tuberculosis for an exposed
+individual are estimated to be 4.131 times larger than the odds of TB for
+unexposed individuals, with a 95\% confidence interval of 2.424 to 7.255.
+
+\end{enumerate}
+
+\item%2
+{\it Extra Credit for STAT 425 and required for STAT 525: Above you were able
+to get results when you fit the model with an interaction in it. Note however
+that the model fit perfectly (residual deviance of 0 on 0 df). We were even
+able to compare this model to the simpler additive model with a
+drop-in-deviance test. I computed the sample proportions, transformed them to
+logits, and attempted to fit an ordinary least squares (OLS) model involving
+the interaction. I got the following.}
+
+<<prob2>>=
+TB.data$p <- with(TB.data, cases/(cases+controls))
+TB.data$logit <- with(TB.data, log(p/(1-p)))
+summary(lm(logit~biomass*income, data=TB.data))
+@
+
+{\it This model did not fit. Why can we get valid results fitting a logistic
+regression model but not the OLS model? (The answer has nothing to do with the
+OLS fit being invalid because it is applied to proportions. For example,
+compare the coefficient estimates from the OLS fit to the logistic regression
+model fit.).}
+
+This OLS model includes as many coefficients as there are observed logits, so
+the model perfectly fits the observed data. Thus this model has a residual
+variance of zero, so standard errors cannot be computed. The logistic
+regression assumes that the variance is a function of the estimated proportion
+of individuals with TB, so it does not matter that the model leaves no
+unexplained variation.
+
+\item%3
+{\it We looked at using \texttt{prop.trend.test} to test for a linear trend in
+risk. Recall the data were the presence or absence of coronary heart disease
+with body weight being the risk factor. Weight was binned into 5 ordinal
+categories. The data were.}
+<<prob31>>=
+chd<-array(c(32,31,50,66,78,558,505,594,501,739),dim=c(5,2),
+dimnames=list(c("<150","151-160","161-170","171-180",">180"),
+c("CHD","no CHD")) )
+# get the number of trials by row
+n<-rowSums(chd)
+# get the counts
+d<-chd[,1]
+prop.trend.test(d,n)
+@
+{\it Recall that the test is based on fitting a weighted least squares model
+with the proportions as responses and the weight categories treated as a
+quantitative variable with values 1 through 5. We will fit a logistic
+regression model to these data to test for a linear trend.}
+<<prob32>>=
+score<-1:5
+fit<-glm(cbind(chd[,1],chd[,2])~score,family=binomial)
+summary(fit)
+@
+{\it We talked about the \texttt{Residual Deviance} but not about the
+\texttt{Null Deviance} This is the deviance associated with the reduced model
+that arises if all the regression coefficients are 0. In this case it is the
+deviance associated with the null hypothesis \(H_{0}:\beta_{1}=0\). To test for
+a trend we compare the full model}
+\begin{equation*}
+logit(\pi(x))=\beta_{0}+\beta_{1}x
+\end{equation*}
+{\it to the reduced model}
+\begin{equation*}
+logit(\pi(x))=\beta_{0}
+\end{equation*}
+
+\begin{enumerate}
+
+\item%a
+{\it Using the residual and null deviances carry out a drop in deviance test to
+compare these two models. Compare the results (value of test statistic and
+p-value) to those from \texttt{prop.trend.test}.}
+
+<<prob3a>>=
+21.3981-5.7913
+pchisq(15.6068, 1, lower.tail = FALSE)
+@
+
+The drop-in-deviance test statistic is \(\chi^2_{1}
+=\Sexpr{signif(21.3981-5.7913, 5)}\) with \(\text{p-value}
+=\Sexpr{formatC(pchisq(15.6068, 1, lower.tail = FALSE),
+                format = 'fg', flag = '#', digits = 3)}\),
+giving very strong evidence of a linear association between the log-odds of
+coronary heart disease and body weight. This test statistic is similar
+(but larger by 0.3) to the \texttt{prop.test} statistic and so the p-values are
+very close as well.
+
+\item%b
+{\it What advantages do the logistic regression model have over the results
+from \texttt{prop.trend.test}?}
+
+The biggest advantage would be the ability to adjust for other variables by
+including them in the model as predictors.
+
+\end{enumerate}
+
+\item%4
+{\it Suppose you have a single categorical risk factor measured at 3 levels
+(\(L\) = low, \(M\) = medium, and \(H\) = high). Assuming that \(H\) is chosen
+to be the reference category define two dummy variables \(X_{1}\) and \(X_{2}\)
+for the \(L\) and \(M\) groups. A logistic regression model}
+\begin{equation*}
+logit(\pi(x))=\beta_{0}+\beta_{1}X_{1}+\beta_{2}X_{2}
+\end{equation*}
+{will be fit to the data.}
+
+\begin{enumerate}
+
+\item%a
+{\it Interpret the parameters in terms of relevant odds ratios.}
+
+\(\boldsymbol{\beta}_{\mathbf{0}}\): For a high-risk individual, the odds
+of disease are \(\displaystyle e^{\beta_{0}}\).
+
+\(\boldsymbol{\beta}_{\mathbf{1}}\): The odds of disease for a low-risk
+individual are \(e^{\beta_{1}}\) times the odds of disease for a high-risk
+individual.
+
+\(\boldsymbol{\beta}_{\mathbf{2}}\): The odds of disease for a medium-risk
+individual are \(e^{\beta_{2}}\) times the odds of disease for a high-risk
+individual.
+
+\item%b
+{\it Are there any structural relationships imposed on the odds ratios by this
+model? (Hint: This question may make more sense after you read the next
+problem).}
+
+No, this model accommodates any type of relationship among the odds ratios.
+
+\end{enumerate}
+
+\pagebreak
+\item%5
+{\it The labeling of the categorical variable in the previous question implies
+a natural ordering. Suppose you code the risk factor as a single quantitative
+variable \(X\) with values 0 for \(L\), 1 for \(M\) , and 2 for \(H\).}
+
+\begin{enumerate}
+
+\item%a
+{\it Describe an appropriate logistic regression model for this situation,
+providing an interpretation of the parameters.}
+
+An appropriate model would be
+\begin{equation*}
+logit(\pi(x))=\beta_{0}+\beta_{1}X.
+\end{equation*}
+The odds of disease for a low-risk individual are \(\displaystyle
+e^{\beta_{0}}\). Moving up by one level of risk is associated with the odds
+of disease increasing by a multiplicative factor of \(\displaystyle
+e^{\beta_{1}}\).
+
+\item%b
+{\it Are there any structural relationships imposed on the odds ratios by this
+model?}
+
+Yes, this model forces the odds ratio for medium-risk individuals against
+low-risk individuals to be the same as the odds ratio for high-risk individuals
+versus medium-risk individuals.
+
+\end{enumerate}
+
+\end{enumerate}
+
+\end{document}
