@@ -1,12 +1,14 @@
-all: hw3.pdf
+filename=hw3
+
+all: $(filename).pdf
 
 clean:
 	rm -rf *.aux *.gz *.log *.tex .Rhistory *~ figure cache
 
-hw3.pdf: hw3.tex
-	pdflatex hw3.tex
-	Rscript --vanilla -e "require(extrafont);embed_fonts('hw3.pdf')"
+$(filename).pdf: $(filename).tex
+	pdflatex $(filename).tex
+	Rscript --vanilla -e "require(extrafont);embed_fonts('$(filename).pdf')"
 
-hw3.tex: hw3.rnw
-	Rscript --vanilla -e "require(knitr);knit('hw3.rnw')"
+$(filename).tex: $(filename).rnw
+	Rscript --vanilla -e "require(knitr);knit('$(filename).rnw')"
 

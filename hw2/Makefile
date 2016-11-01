@@ -1,12 +1,14 @@
-all: hw2.pdf
+filename=hw2
+
+all: $(filename).pdf
 
 clean:
 	rm -rf *.aux *.gz *.log *.tex .Rhistory *~ figure cache
 
-hw2.pdf: hw2.tex
-	pdflatex hw2.tex
-	Rscript --vanilla -e "require(extrafont);embed_fonts('hw2.pdf')"
+$(filename).pdf: $(filename).tex
+	pdflatex $(filename).tex
+	Rscript --vanilla -e "require(extrafont);embed_fonts('$(filename).pdf')"
 
-hw2.tex: hw2.rnw
-	Rscript --vanilla -e "require(knitr);knit('hw2.rnw')"
+$(filename).tex: $(filename).rnw
+	Rscript --vanilla -e "require(knitr);knit('$(filename).rnw')"
 

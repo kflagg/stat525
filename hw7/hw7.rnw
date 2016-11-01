@@ -1,0 +1,447 @@
+\documentclass[11pt]{article}
+\usepackage{fullpage,graphicx,float,amsmath,enumitem,fancyhdr}
+
+\setlist{parsep=5.5pt}
+\setlength{\parindent}{0pt}
+
+\newcommand\assignment{Stat 525 Homework 7}
+\newcommand\myname{Kenny Flagg}
+\newcommand\duedate{October 31, 2016}
+
+\pagestyle{fancy}
+\lhead{\assignment}
+\chead{\duedate}
+\rhead{\myname}
+\setlength{\headheight}{18pt}
+\setlength{\headsep}{2pt}
+
+\title{\assignment}
+\author{\myname}
+\date{\duedate}
+
+\begin{document}
+\maketitle
+
+<<setup, echo = FALSE, message = FALSE, cache = FALSE>>=
+library(knitr)
+library(extrafont)
+opts_chunk$set(echo = TRUE, comment = NA, message = FALSE,
+               show.signif.stars = FALSE,
+               fig.align = 'center', fig.width = 6.5, fig.height = 3,
+               fig.pos = 'H', size = 'footnotesize', dev = 'pdf',
+               dev.args = list(family = 'CM Roman', pointsize = 11))
+knit_theme$set('print')
+
+#library(xtable)
+options(xtable.table.placement = 'H', width = 80, scipen = 2,
+        show.signif.stars = FALSE)
+
+#source('../.dependencies/WoolfCMH.r')
+#source('../.dependencies/BreslowDay.r')
+@
+
+\begin{enumerate}
+
+\item%1
+{\it The analyses presented below are from a study about the relationship
+between waking with a sore throat after surgery as a function of duration (in
+minutes) and type of device. We have}
+\begin{equation*}
+Y=\begin{cases}
+1 & \text{sore throat} \\
+0 & \text{no sore throat}
+\end{cases}
+\qquad
+\text{type}=\begin{cases}
+1 & \text{mask airway} \\
+0 & \text{tracheal tube}
+\end{cases}
+\end{equation*}
+{\it The data will be provided to you in the file \texttt{sorethroat.csv}. R
+code that may prove useful is also attached.}
+
+\begin{enumerate}
+
+\item%a
+{\it Fit an additive model to the data and give me the summary results.}
+
+<<prob1a1>>=
+sore.data <- read.csv('sorethroat.csv', header = TRUE)
+sore.fit <- glm(y ~ type + duration, family = binomial, data = sore.data)
+summary(sore.fit)
+@
+
+\pagebreak
+{\it On the logit scale write down the two equations corresponding to mask and
+tube, respectively.}
+
+For the mask airway patients, the estimated log odds of waking with a sore
+throat are
+\begin{align*}
+\mathrm{logit}\left(\widehat{\pi}\right)
+&=\Sexpr{signif(coef(sore.fit)['(Intercept)'], 3)}
+\Sexpr{paste0(ifelse(coef(sore.fit)['type'] < 0, '', '+'),
+              signif(coef(sore.fit)['type'], 3))}
+\Sexpr{paste0(ifelse(coef(sore.fit)['duration'] < 0, '', '+'),
+              signif(coef(sore.fit)['duration'], 3))}t \\
+&= \Sexpr{signif(coef(sore.fit)['(Intercept)'] + coef(sore.fit)['type'], 3)}
+\Sexpr{paste0(ifelse(coef(sore.fit)['duration'] < 0, '', '+'),
+              signif(coef(sore.fit)['duration'], 3))}t
+\end{align*}
+where \(t\) is the duration of surgery in minutes.
+
+For the tracheal tube patients, the estimated log odds of waking with a sore
+throat are
+\begin{equation*}
+\mathrm{logit}\left(\widehat{\pi}\right)
+=\Sexpr{signif(coef(sore.fit)['(Intercept)'], 3)}
+\Sexpr{paste0(ifelse(coef(sore.fit)['duration'] < 0, '', '+'),
+              signif(coef(sore.fit)['duration'], 3))}t
+\end{equation*}
+where \(t\) is again the duration of surgery in minutes.
+
+\item%b
+{\it Estimate the ratio of the odds of a sore throat when using a mask airway
+to a sore throat when using the tracheal tube. Provide me with an approximate
+95\% confidence interval for the true odds ratio. Interpret the interval in
+terms of the problem.}
+
+<<prob1b>>=
+exp(coef(sore.fit)['type'])
+exp(confint(sore.fit)['type',])
+@
+
+After adjusting for the duration of surgery, we are 95\% confident that the
+true odds of a sore throat when using a mask airway ratio are between
+\Sexpr{paste(signif(exp(confint(sore.fit)['type',]), 3), collapse = ' and ')}
+times the odds of a sore throat when using a tracheal tube.
+
+\item%c
+{\it Estimate the ratio of the odds of a sore throat for a surgery of 40
+minutes to the odds for a surgery of 30 minutes. Provide me with an approximate
+95\% confidence interval for the true odds. Interpret the interval in terms of
+the problem.}
+
+<<prob1c>>=
+exp(coef(sore.fit)['duration'] * 10)
+exp(confint(sore.fit)['duration',] * 10)
+@
+
+After adjusting for the type of device, we are 95\% confident that the true
+odds of a sore throat after a 40 minute surgery are between
+\Sexpr{paste(signif(exp(confint(sore.fit)['duration',] * 10), 3),
+             collapse = ' and ')}
+times the odds of a sore throat after a 30 minute surgery.
+
+\item%d
+{\it Fit a model with an interaction between type and duration. Summarize the
+results and write down (on the logit scale) the two equations corresponding to
+mask and tube, respectively.}
+
+<<prob1d1>>=
+sore.fit2 <- glm(y ~ type * duration, family = binomial, data = sore.data)
+summary(sore.fit2)
+@
+
+For a patient with a mask airway with surgery duration \(t\) minutes, the
+estimated log odds of waking with a sore throat are
+\begin{align*}
+\mathrm{logit}\left(\widehat{\pi}\right)
+&=\Sexpr{signif(coef(sore.fit2)['(Intercept)'], 3)}
+\Sexpr{paste0(ifelse(coef(sore.fit2)['type'] < 0, '', '+'),
+              signif(coef(sore.fit2)['type'], 3))}
++(\Sexpr{signif(coef(sore.fit2)['duration'], 3)}
+\Sexpr{paste0(ifelse(coef(sore.fit2)['type:duration'] < 0, '', '+'),
+              signif(coef(sore.fit2)['type:duration'], 3))})t \\
+&=\Sexpr{signif(coef(sore.fit2)['(Intercept)'] + coef(sore.fit2)['type'], 3)}
+\Sexpr{paste0(ifelse(coef(sore.fit2)['duration']
+                       + coef(sore.fit2)['type:duration'] < 0, '', '+'),
+              signif(coef(sore.fit2)['type:duration']
+                + coef(sore.fit2)['duration'], 3))}t.
+\end{align*}
+
+
+For a patient with a tracheal tube with surgery duration \(t\) minutes, the
+estimated log odds of waking with a sore throat are
+\begin{equation*}
+\mathrm{logit}\left(\widehat{\pi}\right)
+=\Sexpr{signif(coef(sore.fit2)['(Intercept)'], 3)}
+\Sexpr{paste0(ifelse(coef(sore.fit2)['duration'] < 0, '', '+'),
+              signif(coef(sore.fit2)['duration'], 3))}t.
+\end{equation*}
+
+\item%e
+{\it Using the interaction model estimate the ratio of the odds of a sore
+throat for a surgery lasting 30 minutes when the mask is used to the odds of a
+sore throat surgery lasting 30 minutes when a tracheal tube is used. Provide me
+with an approximate 95\% confidence interval. Interpret the interval in terms
+of the problem.}
+
+<<prob1e>>=
+coefs.pred <- rbind(0, 1, 0, 30)
+logit.pi.hat <- coef(sore.fit2) %*% coefs.pred
+logit.pi.hat
+exp(logit.pi.hat)
+SE.e <- sqrt(t(coefs.pred) %*% vcov(sore.fit2) %*% coefs.pred)
+SE.e
+exp(logit.pi.hat + qnorm(c(0.025, 0.975)) * SE.e)
+@
+
+We are 95\% confident that the true odds of a sore throat for a patient with a
+mask airway and a thirty minute surgery are between
+\Sexpr{paste(signif(exp(logit.pi.hat + qnorm(c(0.025, 0.975)) * SE.e), 3),
+                    collapse = ' and ')}
+times the odds of a sore throat for a patient with a tracheal tube and a thirty
+minute surgery.
+
+\item%f
+{\it Do we need the interaction term? Carry out both a Wald test and a
+likelihood ratio test. Summarize the results and draw a conclusion in terms of
+the problem.}
+
+\textbf{Wald:}
+
+From the summary output in part (d), the interaction term has a Wald statistic
+of \(z =
+\Sexpr{signif(summary(sore.fit2)$coefficients['type:duration', 'z value'],
+              3)}\) with a p-value of
+\Sexpr{signif(summary(sore.fit2)$coefficients['type:duration', 'Pr(>|z|)'], 4)},
+which is not convincing evidence that the relationship between the odds of a
+sore throat and the type of device depends linearly on the surgery duration.
+
+\textbf{LRT:}
+
+<<prob1f1>>=
+anova(sore.fit, sore.fit2, test = 'Chisq')
+@
+
+The LRT statistic is \(\chi^{2}_{1} =
+\Sexpr{signif(anova(sore.fit, sore.fit2, test = 'Chisq')[2,'Deviance'], 3)}\)
+with a p-value of
+\Sexpr{signif(anova(sore.fit, sore.fit2, test = 'Chisq')[2,'Pr(>Chi)'], 4)}.
+Again, this is little to no evidence of an interaction between the device type
+and the surgery duration.
+
+\end{enumerate}
+
+\pagebreak
+\item%2
+{\it Kyphosis is a disfiguring forward flexion of the spine following spinal
+surgery. Age in months of 18 subjects with kyphosis (\(y=1\)) and 22 subjects
+without kyphosis (\(y=0\)) are given below.}
+
+<<prob2>>=
+y <- c(rep(1, 18), rep(0, 22))
+age <- c(12, 15, 42, 52, 59, 73, 82, 91, 96, 105, 114, 120, 121, 128, 130, 139,
+         139, 157, 1, 1, 2, 8, 11, 18, 22, 31, 37, 61, 72, 81, 97, 112, 118,
+         127, 131, 140, 151, 159, 177, 206)
+@
+
+\begin{enumerate}
+
+\item%a
+{\it Fit two logistic regression models with age as the predictor. One model
+only incorporates age as a linear term while the second has age and age squared
+in it.}
+<<prob2a1>>=
+fit <- glm(y ~ age, family = binomial)
+fit.q <- glm(y ~ age + I(age^2), family = binomial)
+@
+{\it Compare the two models. Does it appear that the relationship is quadratic?
+Justify your answer.}
+
+<<prob2a2>>=
+summary(fit)
+summary(fit.q)
+anova(fit, fit.q, test = 'Chisq')
+@
+
+The likelihood ratio test has a statistic of \(\chi^{2}_{1} =
+\Sexpr{signif(anova(fit, fit.q, test = 'Chisq')[2,'Deviance'], 3)}\)
+with a p-value of
+\Sexpr{signif(anova(fit, fit.q, test = 'Chisq')[2,'Pr(>Chi)'], 4)}, providing
+strong evidence that there is a quadratic assiciation between the log odds of
+kyphosis and age.
+
+\item%b
+{\it Interpretation of quadratic effects can be problematic. A graphical
+assessment is often helpful. Plot the estimated odds of kyphosis versus age.
+Provide me with a copy of the plot.}
+
+<<prob2b1, fig.height = 3.5>>=
+# Note: fitted(fit.q) gives probabilities, not odds or log odds.
+# predict(fit.q, type = 'link') gives the log odds.
+plot(age, exp(predict(fit.q, type = 'link')), main = 'Fitted Odds vs Age',
+     xlab = 'Age (months)', ylab = 'Fitted Odds of Kyphosis')
+@
+
+\item%c
+{\it Summarize the relationship.}
+
+The estimated relationship between kyphosis and age has clear curvature, with
+the odds of kyphosis being near 0.1 for newborn infants, increasing to about 2
+for children aged 100 months, and then decreasing with age, leveling off near
+zero around 200 months.
+
+\item%d
+{\it STAT 525 Only: At what age is the estimated odds of kyphosis the greatest
+(I want a general answer given as a function of the estimated regression
+coefficients)? Give an approximation for the variance of this estimated age.
+Now use the general formulas you just derived to give an estimate of the age
+and the variance of that estimate for the kyphosis problem.}
+
+First, note that the logarithm is a one-to-one function, so the odds and log
+odds are maximized by the same value.
+\begin{align*}
+\frac{d}{dt} \mathrm{logit}(\widehat{\pi}(t))
+&= \frac{d}{dt} \left(\widehat{\beta}_{0} + \widehat{\beta}_{1} t +
+\widehat{\beta}_{2} t^{2}\right) \\
+&= \widehat{\beta}_{1} + 2 \widehat{\beta}_{2} t.
+\end{align*}
+Setting this equal to zero, we find that the estimated log odds (and therefore
+the estimated odds as well) are maximized by an age of \(t_\mathrm{max}
+= -\dfrac{\widehat{\beta}_{1}}{2\widehat{\beta}_{2}}\).
+
+Example 5.5.27 in Casella and Berger gives a cute delta-method result for the
+variance of a ratio, so
+\begin{equation*}
+\mathrm{Var}\left(\frac{\widehat{\beta}_{1}}{\widehat{\beta}_{2}}\right)
+\approx \left(\frac{\beta_{1}}{\beta_{2}}\right)^{2}
+\left(\frac{\mathrm{Var}\left(\widehat{\beta}_{1}\right)}{\beta_{1}^{2}} +
+\frac{\mathrm{Var}\left(\widehat{\beta}_{2}\right)}{\beta_{2}^{2}} -
+2\frac{\mathrm{Cov}\left(\widehat{\beta}_{1},\widehat{\beta}_{2}\right)}
+{\beta_{1}\beta_{2}}\right)
+\end{equation*}
+using the fact that \(\widehat{\beta}_{1}\) and \(\widehat{\beta}_{2}\) are
+MLEs and therefore asymptotically unbiased. Then a very crude estimate is
+\begin{equation*}
+\widehat\mathrm{Var}\left(t_\mathrm{max}\right)
+\approx \frac{1}{4}\widehat\mathrm{Var}
+\left(\frac{\widehat{\beta}_{1}}{\widehat{\beta}_{2}}\right)
+\approx \left(\frac{\widehat{\beta}_{1}}{2\widehat{\beta}_{2}}\right)^{2}
+\left(\frac{\mathrm{Var}\left(\widehat{\beta}_{1}\right)}
+{\widehat{\beta}_{1}^{2}} +
+\frac{\mathrm{Var}\left(\widehat{\beta}_{2}\right)}
+{\widehat{\beta}_{2}^{2}} -
+2\frac{\mathrm{Cov}\left(\widehat{\beta}_{1},\widehat{\beta}_{2}\right)}
+{\widehat{\beta}_{1}\widehat{\beta}_{2}}\right).
+\end{equation*}
+
+<<prob2d>>=
+beta1.hat <- coef(fit.q)['age']
+beta2.hat <- coef(fit.q)['I(age^2)']
+t.max <- -beta1.hat / (2 * beta2.hat)
+t.max
+
+var.hat.beta1 <- vcov(fit.q)['age', 'age']
+var.hat.beta2 <- vcov(fit.q)['I(age^2)', 'I(age^2)']
+cov.hat <- vcov(fit.q)['age', 'I(age^2)']
+var.hat.t <- (beta1.hat / (2 * beta2.hat))^2 *
+  (var.hat.beta1 / (beta1.hat^2) +
+     var.hat.beta2 / (beta2.hat^2) -
+     2 * cov.hat / (beta1.hat * beta2.hat))
+var.hat.t
+@
+
+We estimate that the odds of kyphosis are greatest at the age of
+\Sexpr{signif(t.max, 3)} months. The variance of this estimate is approximately
+\Sexpr{signif(var.hat.t, 5)}.
+
+\end{enumerate}
+
+\item%3
+{\it Duchenne Muscular Dystrophy (DMD) is a genetic disease transmitted from
+mothers to their children. Male offspring generally do not live very long but
+females may be silent carriers - they do not get sick but are capable of
+transmitting DMD to their offspring. Blood levels of 2 enzymes (creatine kinase
+(CK) and hemopexin (H)) were evaluated as possible screening tools. The data
+are available in an R package \texttt{Sleuth3}.}
+
+\begin{enumerate}
+
+\item%a
+{\it Fit a model with the explanatory variables \texttt{log(ck)} and
+\texttt{h}. Summarize the results.}
+
+<<prob3a1>>=
+library(Sleuth3)
+MD.dat <- ex2012
+names(MD.dat) <- c('group', 'ck', 'h')
+MD.dat$group <- ifelse(MD.dat$group == 'Control', 0, 1)
+fit.1 <- glm(group ~ log(ck) + h, data = MD.dat, family = binomial)
+summary(fit.1)
+@
+
+\pagebreak
+\item%b
+{\it Create a classification table using a cutpoint of \(c = 38/120\). Compare
+the accuracy, sensitivity, specificity, \(PV+\), and \(PV-\) values (summarize
+your results in a table). Interpret these measures in terms of the problem. Be
+careful with \(PV+\) and \(PV-\) as these are case-control data and those
+values are not applicable for a general population.}
+
+<<prob3b1>>=
+pi.hat <- predict(fit.1, type = 'response')
+y.hat <- ifelse(pi.hat >= 38/120, 1, 0)
+table(Group = MD.dat$group, Predicted = y.hat)
+@
+
+\begin{center}\begin{tabular}{lr}
+Quantity & Value \\
+\hline
+Accuracy & \((73+34)/120=\Sexpr{sprintf('%.3f', (73+34)/120)}\) \\
+Sensitivity & \(34/(34+4)=\Sexpr{sprintf('%.3f', 34/(34+4))}\) \\
+Specificity & \(73/(73+9)=\Sexpr{sprintf('%.3f', 73/(73+9))}\) \\
+\(PV+\) & \(34/(34+9)=\Sexpr{sprintf('%.3f', 34/(34+9))}\) \\
+\(PV-\) & \(73/(73+4)=\Sexpr{sprintf('%.3f', 73/(73+4))}\)
+\end{tabular}\end{center}
+
+Overall, this rule correctly classifies 89.2\% of the individuals in the
+sample as having DMD or not. Of the individuals with DMD, 89.5\% are correctly
+identifed, and 89.0\% of the individuals without DMD are correctly classified.
+Of the individuals predicted to have DMD, 79.1\% actually have DMD, and of the
+individuals predicted to not have DMD, 94.8\% did not actually have DMD.
+
+
+\item%c
+{\it Install the Epi package if you have not already done so and use the ROC
+function to create a ROC curve using fitted results. Show the plot in your
+write-up.}
+
+{\it Compare the results commenting on}
+\begin{enumerate}
+\item{\it the optimum cutpoint}
+\item{\it Sensitivity, Specificity, \(PV+\), and \(PV-\). Recall that the
+\(PV+\) and \(PV-\) values in the plot are incorrect but you can use them to
+get the correct values.}
+\item{\it AUC and the implication it has in terms of using these two enzymes as
+a screening tool.}
+\end{enumerate}
+
+<<prob3c1, fig.height = 6>>=
+library(Epi)
+# additive model
+ROC(fitted(fit.1), MD.dat$group, plot = 'ROC')
+@
+
+\begin{center}\begin{tabular}{lrr}
+Quantity & Part (b) & Optimal \\
+\hline
+Sensitivity & \(34/(34+4)=\Sexpr{sprintf('%.3f', 34/(34+4))}\) & 0.895 \\
+Specificity & \(73/(73+9)=\Sexpr{sprintf('%.3f', 73/(73+9))}\) & 0.915 \\
+\(PV+\) & \(34/(34+9)=\Sexpr{sprintf('%.3f', 34/(34+9))}\) & \Sexpr{1-0.051} \\
+\(PV-\) & \(73/(73+4)=\Sexpr{sprintf('%.3f', 73/(73+4))}\) & \Sexpr{1-0.171}
+\end{tabular}\end{center}
+
+The optimum cutpoint is 0.336, very close to the cutpoint of \(38/120=0.317\)
+used in part (b). The sensitivity and specificity are roughly the same, but the
+optimal cutpoint rule has a much larger \(PV+\) and a much smaller \(PV-\),
+suggesting that it finds the ``easiest'' cases of DMD but missed quite a few of
+them. But, with an AUC of 0.945, this classifcation rule would still be
+considered to have ``outstanding predictive ability.''
+
+\end{enumerate}
+
+\end{enumerate}
+
+\end{document}

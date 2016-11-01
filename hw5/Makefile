@@ -1,12 +1,14 @@
-all: hw5.pdf
+filename=hw5
+
+all: $(filename).pdf
 
 clean:
 	rm -rf *.aux *.gz *.log *.tex .Rhistory *~ figure cache
 
-hw5.pdf: hw5.tex
-	pdflatex hw5.tex
-	Rscript --vanilla -e "require(extrafont);embed_fonts('hw5.pdf')"
+$(filename).pdf: $(filename).tex
+	pdflatex $(filename).tex
+	Rscript --vanilla -e "require(extrafont);embed_fonts('$(filename).pdf')"
 
-hw5.tex: hw5.rnw
-	Rscript --vanilla -e "require(knitr);knit('hw5.rnw')"
+$(filename).tex: $(filename).rnw
+	Rscript --vanilla -e "require(knitr);knit('$(filename).rnw')"
 
