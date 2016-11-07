@@ -1,0 +1,258 @@
+\documentclass[11pt]{article}
+\usepackage{fullpage,graphicx,float,amsmath,enumitem,fancyhdr}
+
+\setlist{parsep=5.5pt}
+\setlength{\parindent}{0pt}
+
+\newcommand\assignment{Stat 525 Homework 8}
+\newcommand\myname{Kenny Flagg}
+\newcommand\duedate{November 7, 2016}
+
+\pagestyle{fancy}
+\lhead{\assignment}
+\chead{\duedate}
+\rhead{\myname}
+\setlength{\headheight}{18pt}
+\setlength{\headsep}{2pt}
+
+\title{\assignment}
+\author{\myname}
+\date{\duedate}
+
+\begin{document}
+\maketitle
+
+<<setup, echo = FALSE, message = FALSE, cache = FALSE>>=
+library(knitr)
+library(extrafont)
+opts_chunk$set(echo = TRUE, comment = NA, message = FALSE,
+               show.signif.stars = FALSE,
+               fig.align = 'center', fig.width = 6.5, fig.height = 3,
+               fig.pos = 'H', size = 'footnotesize', dev = 'pdf',
+               dev.args = list(family = 'CM Roman', pointsize = 11))
+knit_theme$set('print')
+
+#library(xtable)
+options(xtable.table.placement = 'H', width = 80, scipen = 2,
+        show.signif.stars = FALSE)
+
+#source('../.dependencies/WoolfCMH.r')
+#source('../.dependencies/BreslowDay.r')
+@
+
+\begin{enumerate}
+
+\item%1
+{\it Diabetes melitus is a major public health problem. Patients who have had
+the disease longer than 20 years tend to develop diabetic retinopathy (damage
+to blood vessels in the retina). Early detection is crucial to minimizing
+damage. A study was conducted to determine if general practitioners could be
+trained to detect diabetic retinopathy after a short training session. The eye
+skills of 85 general practioners were evaluated before and after training
+workshops. Each doctor was asked to evaluate 4 patients who did and 4 patients
+who did not have retinopathy before and after the workshop. We will look at the
+results for those who did not have retinopathy, i.e. we will look at the
+evidence for an improvement in specificity. Let \(X\) denote post-workshop with
+\(X=1\) denoting not satisfactory and \(X=2\) denoting satisfactory. Let \(Y\)
+denote pre-workshop with \(Y=1\) denoting not satisfactory and \(Y=2\) denoting
+satisfactory.}
+\begin{center}\begin{tabular}{c|cc|c}
+& \(X=1\) & \(X=2\) & \\
+\hline
+\(Y=1\) & 15 & 50 & 65 \\
+\(Y=2\) & 5 & 15 & 20 \\
+\hline
+Total & 20 & 65 & 85
+\end{tabular}\end{center}
+
+\begin{enumerate}
+
+\item%a
+{\it Let \(p_{1}\) be the proportion of non-satisfactory results pre-workshop
+and \(p_{2}\) be the proportion of non-satisfactory results post-workshop.
+Estimate the difference in proportions \(p_{1}-p_{2}\) and give a standard
+error for that estimate.}
+
+\begin{equation*}
+\widehat{p}_{1} - \widehat{p}_{2} = \frac{50-5}{85}
+= \Sexpr{signif((50-5)/85, 3)}
+\end{equation*}
+\begin{equation*}
+SE\left(\widehat{p}_{1} - \widehat{p}_{2}\right)
+= \frac{1}{85}\sqrt{(50+5) - \frac{(50-5)^{2}}{85}}
+= \Sexpr{signif(sqrt(50 + 5 - ((50-5)^2)/85)/85, 3)}
+\end{equation*}
+
+\item%b
+{\it Construct an approximate 95\% confidence interval for \(p_{1}-p_{2}\) and
+interpret it.}
+
+\begin{equation*}
+\Sexpr{signif((50-5)/85, 3)}
+\pm 1.96 \times \Sexpr{signif(sqrt(50 + 5 - ((50-5)^2)/85)/85, 3)}
+= \Sexpr{sprintf('(%s)', paste(signif((50-5)/85 + qnorm(c(0.025, 0.975)) *
+                  sqrt(50 + 5 - ((50-5)^2)/85)/85, 3), collapse = ', '))}
+\end{equation*}
+
+We are 95\% confident that the true proportion of doctors whose retinopathy
+evaluations were unsatisfactory before the workshop is between
+\Sexpr{paste(signif((50-5)/85 + qnorm(c(0.025, 0.975)) *
+                    sqrt(50 + 5 - ((50-5)^2)/85)/85, 3), collapse = ' and ')}
+higher than the proportion doctors whose retinopathy evaluations were
+unsatisfactory after the workshop.
+
+\pagebreak
+\item%c
+{\it Test the hypothesis that the proportions of non-satisfactory results are
+equal pre and post-workshop.}
+
+<<prob1c1>>=
+diabetes <- cbind(c(15, 5), c(50, 15))
+mcnemar.test(diabetes)
+@
+
+With \(\chi^{2}_{\Sexpr{mcnemar.test(diabetes)$parameter}}
+=\Sexpr{mcnemar.test(diabetes)$statistic}\) and \(\text{p-value}<0.0001\) we
+have very convincing evidence that the true proportion of doctors whose
+retinopathy evaluations were unsatisfactory before the workshop and the
+proportion of doctors whose retinopathy evaluations were unsatisfactory after
+the workshop are not equal.
+
+\end{enumerate}
+
+\item%2
+{\it To study an association between the risk of a low birth weight newborn and
+maternal smoking, an infant who weighed less than 2500 grams at birth (case)
+was matched to an infant whose birth weight was greater than 2500 grams at
+birth (control) so that the mother of each infant had the same prepregnancy
+weight. The risk factor is the mother's smoking exposure (\(E\) = smoker,
+\(\overline{E}\) = nonsmoker). A total of \(n=167\) matched pairs (matched on
+prepregnancy weight) was included in the study. The table below contains the
+results.}
+\begin{center}\begin{tabular}{c|cc|c}
+& \(<\) 2500 \(E\) & \(<\) 2500 \(\overline{E}\) & \\
+\hline
+\(\geq\) 2500 \(E\) & 15 & 22 & 37 \\
+\(\geq\) 2500 \(\overline{E}\) & 40 & 90 & 130 \\
+\hline
+Total & 55 & 112 & 167
+\end{tabular}\end{center}
+{\it Fit a logistic regression model to these data. Give an estimate of the
+ratio of the odds that an infant exposed to smoking is low birthweigh to the
+odds that an infant not exposed is low birthweight. Give an approximate 95\%
+confidence interval and interpret the interval. R-code for this analysis will
+be provided in a separate script file.}
+
+<<prob21>>=
+id <- rep(1:167, each = 2)
+status <- rep(c(1, 0), 167)
+smk <- c(rep(c(1, 1), 15), rep(c(1, 0), 40), rep(c(0, 1), 22), rep(c(0, 0), 90))
+fun <- function(x){x[1] - x[2]}
+z1 <- by(smk, id, FUN = fun)
+resp <- status[seq(1, 333, 2)]
+fit <- glm(resp ~ z1 - 1, family = binomial)
+
+summary(fit)
+exp(coef(fit))
+exp(confint(fit))
+@
+
+We estimate the odds of low birthweight given smoking exposure to be
+\Sexpr{signif(exp(coef(fit)), 3)} times the odds of low birthweight given no
+smoking exposure. We are 95\% confident that the true odds ratio is between
+\Sexpr{paste(signif(exp(confint(fit)), 3), collapse = ' and ')}.
+
+\item%3
+{\it A data set \texttt{lipcancer.txt} is attached. The data set contains the
+observed numbers of lip cancer cases (\texttt{obs}) in 56 Scottish districts
+between 1975-1980, the expected number of cases (\texttt{exp}), the percentage
+of the district population employed in agriculture, fishing, and forestry
+(\texttt{aff}), and the latitude (\texttt{lat}) and longitude (\texttt{long})
+coordinate of the center of each district. The observed counts by themselves
+can be misleading. For example, district 33 had 7 observed cases but the
+expected number of cases was also 7. But district 8 had 7 observed cases with
+only 2.3 cases expected. The ratio of observed to expected counts is a
+Standardized Morbidity Ratio (SMR). We will model the SMR using a Poisson rate
+model with the number of expected cases included as an offset term in the
+model.}
+
+\begin{enumerate}
+
+\item%a
+{\it Fit a Poisson regression model with observed number of cases as the
+response and \texttt{aff} as the explanatory variable. Summarize the results.
+Show me the output. Interpret the estimated coefficient associated with
+\texttt{aff}. Give an approximate 95\% confidence interval for that parameter.}
+
+<<prob3a1>>=
+lip.cancer <- read.table('Scotland.txt', header = TRUE)
+names(lip.cancer) <- c('id', 'obs', 'exp', 'aff', 'lat', 'long')
+fit.a <- glm(obs ~ aff, family = poisson, offset = log(exp), data = lip.cancer)
+summary(fit.a)
+exp(coef(fit.a)['aff'])
+exp(confint(fit.a)['aff',])
+@
+
+For each additional 1\% of the district employed in agriculture, fishing, or
+farming, we estimate the SMR for lip cancer to be
+\Sexpr{signif(100*(exp(coef(fit.a)['aff'])-1), 3)}\% larger. We are 95\%
+confident that the true increase is between
+\Sexpr{paste(sprintf('%.2f\\%%', 100*(exp(confint(fit.a)['aff',])-1)),
+             collapse = ' and ')}.
+
+\item%b
+{\it One possible confounding issue is how far north a district lies. More
+northern districts are more rural and can be expected to have a higher
+percentage of people who work outside. But the farther north one lives the less
+the sun exposure. Fit a Poisson regression model with observed number of cases
+as the response and \texttt{aff} and \texttt{lat} as explanatory variables.
+\texttt{lat} accounts for the northingness of the district. Summarize the
+results. Show me the output. Interpret the estimated coefficient associated
+with \texttt{aff} after accounting for the possible confounding effects of
+\texttt{lat}. Give an approximate 95\% confidence interval for that parameter.}
+
+<<prob3b1>>=
+fit.b <- glm(obs ~ aff + lat, family = poisson, offset = log(exp), data = lip.cancer)
+summary(fit.b)
+exp(coef(fit.b)['aff'])
+exp(confint(fit.b)['aff',])
+@
+
+After accounting for lattitude, for each additional 1\% of the population
+employed in agriculture, fishing, or farming, we estimate the SMR for lip
+cancer to be
+\Sexpr{signif(100*(exp(coef(fit.b)['aff'])-1), 3)}\% larger,  with a 95\%
+confidence interval from
+\Sexpr{paste(sprintf('%.2f\\%%', 100*(exp(confint(fit.b)['aff',])-1)),
+             collapse = ' to ')}.
+
+\end{enumerate}
+
+\item%4
+{\it Refer to the \((AC, AM, CM)\) model from the Alcohol-Cigarette-Marijuana
+use example. On page 211 in the notes I gave the estimated conditional odds
+ratio of alcohol use among cigarette smokers to alcohol use among non-smokers
+\(\widehat{\theta}_{AC|M}=7.8\). I also gave approximate 95\% (Wald) confidence
+intervals for \(\theta_{AM|C}\) and \(\theta_{CM|A}\). Give the points estimate
+for these quantities for these latter 2 odds ratios and confirm the intervals.}
+
+Using the model summary on page 209,
+\begin{equation*}
+\widehat{\theta}_{AM|C}=\exp\left(2.98601\right)=19.8
+\end{equation*}
+with 95\% confidence interval
+\begin{equation*}
+\exp\left(2.98601 \pm 1.96 \times 0.46468\right)=(7.97, 49.2)
+\end{equation*}
+and
+\begin{equation*}
+\widehat{\theta}_{CM|A}=\exp\left(2.84789\right)=17.3
+\end{equation*}
+with 95\% confidence interval
+\begin{equation*}
+\exp\left(2.84789 \pm 1.96 \times 0.16384\right)=(12.5, 23.8).
+\end{equation*}
+
+\end{enumerate}
+
+\end{document}
