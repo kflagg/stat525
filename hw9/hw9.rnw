@@ -1,0 +1,323 @@
+\documentclass[11pt]{article}
+\usepackage{fullpage,graphicx,float,amsmath,enumitem,fancyhdr}
+
+\setlist{parsep=5.5pt}
+\setlength{\parindent}{0pt}
+
+\newcommand\assignment{Stat 525 Homework 9}
+\newcommand\myname{Kenny Flagg}
+\newcommand\duedate{November 14, 2016}
+
+\pagestyle{fancy}
+\lhead{\assignment}
+\chead{\duedate}
+\rhead{\myname}
+\setlength{\headheight}{18pt}
+\setlength{\headsep}{2pt}
+
+\title{\assignment}
+\author{\myname}
+\date{\duedate}
+
+\begin{document}
+\maketitle
+
+<<setup, echo = FALSE, message = FALSE, cache = FALSE>>=
+library(knitr)
+library(extrafont)
+opts_chunk$set(echo = TRUE, comment = NA, message = FALSE,
+               show.signif.stars = FALSE,
+               fig.align = 'center', fig.width = 6.5, fig.height = 3,
+               fig.pos = 'H', size = 'footnotesize', dev = 'pdf',
+               dev.args = list(family = 'CM Roman', pointsize = 11))
+knit_theme$set('print')
+
+#library(xtable)
+options(xtable.table.placement = 'H', width = 80, scipen = 2,
+        show.signif.stars = FALSE)
+
+#source('../.dependencies/WoolfCMH.r')
+#source('../.dependencies/BreslowDay.r')
+@
+
+\begin{enumerate}
+
+\item%1
+{\it We looked at the Chorley-Ribble cancer data in class. For this problem we
+focus on the locations of the 57 larynx cancer cases.}
+
+\begin{enumerate}
+
+\item%a
+{\it Compute the mean nearest neighbor distance. Carry out a randomization test
+to see if this mean distance is different from that expected under CSR. Provide
+me with a histogram of the nearest neighbor distances and a randomization
+p-value based on the alternative of clustering. What is your conclusion and
+why? I provide you with some of the R code but want you to come up with
+the rest on your own. See page 11 in the spatial notes for an example involving
+the entire Chorley data set. You should be able to modify this for the larynx
+cases only. There is an error in that code. The last line of it should be
+\texttt{sum(hbar.vec<=hbar)/1000}. Provide me with a copy of the code you
+used.}
+
+<<prob1a1>>=
+library(spatstat)
+larynx <- chorley[chorley$marks == 'larynx']
+larynx <- unique.ppp(larynx)
+
+h <- nndist(larynx)
+hbar <- mean(h)
+lambdahat <- intensity(larynx)['larynx']
+
+par(mfrow = c(1, 2))
+plot(larynx)
+hist(h, breaks = 20, freq = FALSE)
+@
+
+<<prob1a2>>=
+set.seed(782315)
+hbar.sim <- c(hbar, replicate(999, mean(nndist(rpoispp(lambdahat, win = Window(larynx))))))
+pval <- mean(hbar.sim <= hbar)
+
+hbar
+lambdahat
+pval
+
+hist(hbar.sim, breaks = 100, freq = FALSE, xlab = expression(bar(h)),
+     main = 'Histogram of 1,000 Simulated Mean Nearest Neighbor Distances')
+abline(v = hbar, lty = 2)
+@
+
+We observed a mean nearest-neighbor distance of \Sexpr{signif(hbar, 3)} km and
+estimated the intensity to be \Sexpr{signif(lambdahat, 3)} cases per km\(^2\).
+Under the null hypothesis of complete spatial randomness, we have very strong
+evidence (\(\text{p-value}=\Sexpr{pval}\)) that the true mean nearest-neighbor
+distance is smaller than expected. This implies that the cases tend to be
+located close together and are therefore clustered.
+
+\pagebreak
+\item%b
+{\it Plot the theoretical and empirical \(G\) functions. What do they suggest
+about the spatial distribution of the points and why?}
+
+<<prob1b1, fig.height = 5>>=
+plot(Gest(larynx))
+@
+
+The empirical \(G\) functions are all larger than the theoretical \(G\)
+function under the complete spatial randomness assumption for distances above
+0.1 km. This suggests that the observed point pattern has more small
+nearest-neighbor distances than expected under CSR, suggesting that larynx
+cancer cases are clustered close together.
+
+\pagebreak
+\item%c
+{\it Plot the simulation envelope. Does it provide addtional evidence to back
+up your conclusion in part (a)? Why or why not.}
+
+<<prob1c1, fig.height = 5>>=
+plot(envelope(larynx, fun = 'Gest', verbose = FALSE))
+@
+
+The empirical \(G\) function stays near the upper edge of the simulation
+envelope, leaving the envelope at a few distances. This provides weak evidence
+that larynx cancer is not a homogeneous process.
+
+\end{enumerate}
+
+\pagebreak
+\item%2
+{\it There is a dataset in the \texttt{spatstat} package containing locations
+of 584 longleaf pines in a plot in Georgia. The investigators expected the
+distribution to be clustered.}
+
+\begin{enumerate}
+
+\item%a
+{\it Provide me with a plot of the pine locations. The plot shows circles of
+different diameters associated with marks based on tree size - ignore those.}
+
+<<prob2a1, fig.height = 4>>=
+par(mar = c(0, 0, 2, 0))
+plot(longleaf, use.marks = FALSE)
+@
+
+\item%b
+{\it Test the hypothesis of clustering against the null hypothesis of CSR using
+\texttt{quadrat.test}. Discuss the results.}
+
+<<prob2b1>>=
+fit <- quadrat.test(longleaf, alternative = 'clustered')
+fit
+@
+
+With \(\chi^{2}_{\Sexpr{fit$parameter}}=\Sexpr{signif(fit$statistic, 5)}\)
+and \(\text{p-value} \Sexpr{format.pval(fit$p.value, eps = 0.0001)}\), there is
+very strong evidence that the counts of trees in the quadrats are more variable
+than expected under CSR, indicating that the trees are spatially clustered.
+
+\pagebreak
+\item%c
+{\it It is possible to ``plot'' the results. The R code will do this for you.
+You will see 3 numbers in each grid cell, the observed count, the expected
+count, and (below those two) the standardized residual. Based on this graphical
+summary where does it appear CSR breaks down and how?}
+
+<<prob2c1, fig.height = 4>>=
+par(mar = c(0, 0, 2, 0))
+plot(fit)
+@
+
+There are some very large positive standardized residuals just above and to the
+right of the center of the region, meaning that part of the site has a cluster
+of trees at a higher spatial intensity than expected under CSR, and there are
+some large negative standardized residuals at the bottom of the region. This
+matches the plot in part (a) which shows many trees close together in the upper
+half of the region, and few trees in the bottom right corner.
+
+\pagebreak
+\item%d
+{\it Below is the frequency distribution of the number of trees in a sample of
+100 quadrats each of radius 6 meters.}
+\begin{center}\begin{tabular}{c|cccccc}
+Trees per quadrat & 0 & 1 & 2 & 3 & 4 & \(\geq 5\) \\
+\hline
+Observed Count & 34 & 33 & 17 & 7 & 3 & 6 \\
+Expected Count & 23.93 & 34.22 & 24.47 & 11.66 & 4.17 & 1.547
+\end{tabular}\end{center}
+{\it The data were pooled for counts \(\geq 5\) to meet the assumptions of the
+method. Carry out a goodness-of-fit test based on an assumption of CSR. Give
+the expected frequencies under CSR. Discuss the results, paying particular
+attention to where CSR breaks down (if it does) - be careful because CSR can
+break down under both clustering and regularity. You are expecting clustering
+- do the results support that expectation and why? The sample mean of the
+observed counts was 1.43.}
+
+<<prob2d1>>=
+# observed counts
+long.obs <- c(34,33,17,7,3,6)
+# expected counts for 0 to 4
+long.exp <- 100 * dpois(0:4, 1.43)
+# expected count for >=5
+long.exp <- c(long.exp, 100 - cumsum(long.exp)[5])
+# so the expected counts are
+long.exp
+# I will leave the rest up to you.
+
+x2 <- sum(((long.obs - long.exp)^2)/long.exp)
+x2
+
+pchisq(x2, 4, lower.tail = FALSE)
+@
+
+With a test statistic of \(\chi^{2}_{4}=\Sexpr{round(x2, 2)}\),
+\(\text{p-value}=\Sexpr{round(pchisq(x2, 4, lower.tail = FALSE), 4)}\), there
+is strong evidence that the quadrat counts do not come from a
+\(\mathrm{Poisson}(1.43)\) distribution. We observed more quadrats containing
+zero or at least 5 trees than expected, which is consistent with clustering.
+
+\end{enumerate}
+
+\pagebreak
+\item%3
+{\it STAT 525: Suppose we have a realization of a spatial point process of
+\(n\) event locations. The cumulative distribution function of \(H\) (the
+nearest event-event distance) is the \(G\) function.}
+
+\begin{enumerate}
+
+\item%a
+{\it Derive the \(G\) function for a two-dimensional homogeneous Poisson
+process.}
+
+If the process has rate \(\lambda\), then the \(G\) function is
+\begin{align*}
+G(h) &= P(H \leq h) \\
+&= P(\text{at least 1 event in a circle with radius }h) \\
+&= 1 - P(0\text{ events in a circle with radius }h) \\
+&= 1 - \exp\left(-\lambda \pi h^{2}\right)
+\frac{\left(\lambda \pi h^{2}\right)^{0}}{0!} \\
+&= 1- \exp\left(-\lambda \pi h^{2}\right).
+\end{align*}
+
+\item%b
+{\it Find the probability density function of \(H\).}
+
+The probability density function of \(H\) is
+\begin{equation*}
+g(h) = \frac{dG(h)}{dh}
+= 2 \lambda \pi h \exp\left(-\lambda \pi h^{2}\right).
+\end{equation*}
+
+\item%c
+{\it Give the mean and variance of \(H\). Hint: Before you start evaluating a
+gnarly integral or two take a close look at the pdf and see if you cannot
+identify the family of distributions. If you can do that you can use this
+knowledge to find the mean and variance.}
+
+\(H\) follows a \(\mathrm{Weibull}\left(2,\lambda \pi\right)\)
+distribution. According to the back of Casella \& Berger (who use a different
+parameterization from both the notes and R), the mean and variance are
+\begin{equation*}
+E(H)=\left(\frac{1}{\lambda \pi}\right)^\frac{1}{2}
+\Gamma\left(\frac{3}{2}\right)
+\end{equation*}
+and
+\begin{equation*}
+Var(H)=\left(\frac{1}{\lambda \pi}\right)
+\left(\Gamma\left(2\right)-\Gamma^{2}\left(\frac{3}{2}\right)\right).
+\end{equation*}
+
+\end{enumerate}
+
+\pagebreak
+\item%4
+{\it The time in days to the development of a tumor for rats exposed to a
+carcinogen follows a Weibull distribution parameterized as in the notes with
+\(\alpha=2\) and \(\lambda=0.001\).}
+
+\begin{enumerate}
+
+\item%a
+{\it What is the probability a rat will be tumor free at 30 days? 60 days?}
+
+The notes give the survival function as \(S(t)=\exp\left(-0.001t^{2}\right)\),
+so
+\begin{equation*}
+P(T > 30) = S(30) = \exp\left(-0.001 \times 30^{2}\right) = 
+\Sexpr{round(pweibull(30, 2, 0.001^(-1/2), lower.tail = FALSE), 4)}
+\end{equation*}
+and
+\begin{equation*}
+P(T > 60) = S(60) = \exp\left(-0.001 \times 60^{2}\right) =
+\Sexpr{round(pweibull(60, 2, 0.001^(-1/2), lower.tail = FALSE), 4)}.
+\end{equation*}
+
+\item%b
+{\it Find the hazard rate of the of the time to tumor appearance at 30 days.
+60 days.}
+
+The notes give that hazard function  as \(h(t)=0.002 t\), so
+\begin{equation*}
+h(30) = 0.002 \times 30 = 0.06
+\end{equation*}
+and
+\begin{equation*}
+h(60) = 0.002 \times 60 = 0.12.
+\end{equation*}
+
+\item%c
+{\it Find the median time to tumor development.}
+
+The median time is \(t_{0.5}\) such that
+\begin{align*}
+P(T > t_{0.5}) = S(t_{0.5}) &= 1-0.5 \\
+\exp\left(-0.001t_{0.5}^{2}\right) &= 0.5
+\end{align*}
+so \(t_{0.5} = \sqrt{-\dfrac{\log(0.5)}{0.001}} = 26.33\) days.
+
+\end{enumerate}
+
+\end{enumerate}
+
+\end{document}
