@@ -1,0 +1,185 @@
+\documentclass[11pt]{article}
+\usepackage{fullpage,graphicx,float,amsmath,enumitem,fancyhdr}
+
+\setlist{parsep=5.5pt}
+\setlength{\parindent}{0pt}
+
+\newcommand\assignment{Stat 525 Homework 10}
+\newcommand\myname{Kenny Flagg}
+\newcommand\duedate{November 21, 2016}
+
+\pagestyle{fancy}
+\lhead{\assignment}
+\chead{\duedate}
+\rhead{\myname}
+\setlength{\headheight}{18pt}
+\setlength{\headsep}{2pt}
+
+\title{\assignment}
+\author{\myname}
+\date{\duedate}
+
+\begin{document}
+\maketitle
+
+<<setup, echo = FALSE, message = FALSE, cache = FALSE>>=
+library(knitr)
+library(extrafont)
+opts_chunk$set(echo = TRUE, comment = NA, message = FALSE,
+               show.signif.stars = FALSE,
+               fig.align = 'center', fig.width = 6.5, fig.height = 3,
+               fig.pos = 'H', size = 'footnotesize', dev = 'pdf',
+               dev.args = list(family = 'CM Roman', pointsize = 11))
+knit_theme$set('print')
+
+#library(xtable)
+options(xtable.table.placement = 'H', width = 80, scipen = 2,
+        show.signif.stars = FALSE)
+
+#source('../.dependencies/WoolfCMH.r')
+#source('../.dependencies/BreslowDay.r')
+@
+
+{\it The data are of survival times of patients with acute myelogenous leukemia
+(AML). The question at the time was whether the standard course of chemotherapy
+should be extended (`maintainance') for additional cycles. The data can be
+found in the data file \texttt{aml} in the \texttt{survival} package. We will
+look at Kaplan-Meier and Nelson-Aalen nonparametric survival curves and carry
+out the log-rank test to compare the patients in the two groups.}
+
+\begin{enumerate}
+
+\item%1
+{\it Print out the data set just so you have it in front of you. It is not that
+big: \texttt{time} is survival time, \texttt{status} is censoring status with 1
+denoting death and 0 denoting censored and \texttt{x} is a binary categorical
+variable indicating membership in either the Maintained or Non-maintained
+groups.}
+
+<<prob11>>=
+library(survival)
+aml
+@
+
+\pagebreak
+\item%2
+{\it The survival times for the Maintained group is}
+\begin{verbatim}
+9    13    13+   18   23   28+   31   34   45+   48   161+
+\end{verbatim}
+{\it Fill in the table below by hand. Remember \(\widehat{P}_{k}\) is actually
+the survival function estimate.}
+
+\begin{center}\begin{tabular}{c|ccc}
+time & \(\widehat{q}_{i}\) & \(\widehat{p}_{i}\) & \(\widehat{P}_{k}\) \\
+\hline
+9 & 1/11 & 10/11 & \(10/11 = 0.909\) \\
+13 & 1/10 & 9/10 & \(0.909 \times 9/10 = 0.818\) \\
+18 & 1/8 & 7/8 & \(0.818 \times 7/8 = 0.716\) \\
+23 & 1/7 & 6/7 & \(0.716 \times 6/7 = 0.614\) \\
+31 & 1/5 & 4/5 & \(0.614 \times 4/5 = 0.491\) \\
+34 & 1/4 & 3/4 & \(0.491 \times 3/4 = 0.368\) \\
+48 & 1/2 & 1/2 & \(0.368 \times 1/2 = 0.184\)
+\end{tabular}\end{center}
+
+\item%3
+{\it Give summary information including mean and median survival times, and
+Kaplan-Meier Curves for the two groups. Briefly discuss what these results seem
+to indicate about the two groups.}
+
+For all times after time 5, the estimated survival curve for the Maintained
+group is above the estimated survival curve for the Non-maintained group. This
+indicates that individuals whose chemotherapy is maintained are more
+likely to survive to a given time than individuals in the whose chemotherapy is
+not maintained.
+
+<<prob31, fig.height = 5>>=
+aml.obj <- Surv(aml$time, aml$status)
+fitKM <- survfit(aml.obj ~ x, data = aml, conf.type = 'log-log')
+print(fitKM, print.rmean = TRUE)
+summary(fitKM)
+plot(fitKM, lty = 3:2, xlab = 'time', ylab = 'survival')
+legend(100, 0.8, c('Non-Maintained', 'Maintained'), lty = 2:3, lwd = 2)
+title(main = 'KM Survival Curves - AML Data')
+@
+
+\pagebreak
+\item%4
+{\it Compare the mean survival times for the two groups and the median survival
+times for the two groups. Which do you think is more important to use as a
+summary measure for comparison - the mean or the median? Justify your answer.}
+
+The mean survival time for the Maintained group is 42.0, much larger than the
+mean of 22.7 for the Non-maintained group. The medians are closer together than
+the means are, with the median being 31 for the Maintained group and 23 for the
+Non-maintained group. The median is more useful because the mean for the
+Maintained group is probably inflated by the one individual who was still alive
+at time 161.
+
+\item%5
+{\it Carry out the log-rank test and give the results. What do they imply about
+the survival times of the two groups. Justify your answer.}
+
+<<prob51>>=
+survdiff(Surv(time, status) ~ x, aml)
+@
+
+The log-rank statistic is \(\chi^{2}_{1}=3.4\) with \(\text{p-value}=0.0653\),
+providing moderate evidence that the Maintained and Non-maintained groups have
+different survival functions.
+
+\item%6
+{\it Using the data in the table in Problem 2 calculate the Nelson-Aalen
+estimator of the survival curve.}
+
+\begin{center}\begin{tabular}{c|ccc}
+time & \(\widehat{q}_{i}\) & \(\widehat{H}\) & \(\exp(-\widehat{H})\) \\
+\hline
+9 & 1/11 & \(1/11=0.091\) & \(\exp(-0.091)=0.913\) \\
+13 & 1/10 & \(0.091+1/10=0.191\) & \(\exp(-0.191)=0.826\) \\
+18 & 1/8 & \(0.191+1/8=0.316\) & \(\exp(-0.316)=0.729\) \\
+23 & 1/7 & \(0.316+1/7=0.459\) & \(\exp(-0.459)=0.632\) \\
+31 & 1/5 & \(0.459+1/5=0.659\) & \(\exp(-0.659)=0.517\) \\
+34 & 1/4 & \(0.659+1/4=0.909\) & \(\exp(-0.909)=0.403\) \\
+48 & 1/2 & \(0.909+1/2=1.409\) & \(\exp(-1.409)=0.244\)
+\end{tabular}\end{center}
+
+\pagebreak
+\item%7
+{\it Using the R code provided calculate the Nelson-Aalen estimator and plot it
+and the Kaplan-Meier Curves. You can use the NA output to confirm your
+calculations in the previous problem.}
+
+The Kaplan-Meier and Nelson-Aalen curves are pretty similar, but the NA
+survival probabilities are a little bit bigger than the KM survival
+probabilities.
+
+<<prob71, fig.height = 5>>=
+fitNA <- survfit(coxph(aml.obj[1:11] ~ 1, data = aml[1:11,]), type = 'aalen')
+plot(fitNA$time, fitNA$surv, type = 's', ylim = c(0, 1),
+     xlab = 'Survival Time', ylab = 'Suvival Probability')
+points(fitNA$time, fitNA$surv, pch = 1)
+lines(fitKM$time[1:9], fitKM$surv[1:9], type = 's', lty = 2)
+points(fitKM$time[1:9], fitKM$surv[1:9], pch = 3)
+legend(100, 0.8, c('Nelson-Aalen', 'Kaplan-Meier'), pch = c(1, 3), lty = c(1, 2))
+summary(fitNA)
+@
+
+\item%8
+{\it Fit a Cox Proportional Hazards model to these data and summarize the
+results giving me an estimate of the appropriate hazard ratio and an associated
+95\% CI. Interpret the results in terms of the problem.}
+
+<<prob81>>=
+fit.cox <- coxph(aml.obj ~ x, data = aml)
+summary(fit.cox)
+@
+
+We estimate the hazard of death for individuals whose chemotherapy is not
+maintained to be 2.4981 times the hazard of death for people whose chemotherapy
+is maintained. An approximate 95\% confidence interval for the hazard ratio is
+0.9159 to 6.813.
+
+\end{enumerate}
+
+\end{document}
