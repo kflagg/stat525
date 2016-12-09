@@ -1,0 +1,149 @@
+\documentclass[11pt]{article}
+\usepackage{fullpage,graphicx,float,amsmath,enumitem,fancyhdr}
+
+\setlist{parsep=5.5pt}
+\setlength{\parindent}{0pt}
+
+\newcommand\assignment{Stat 525 Homework 11}
+\newcommand\myname{Kenny Flagg}
+\newcommand\duedate{December 7, 2016}
+
+\pagestyle{fancy}
+\lhead{\assignment}
+\chead{\duedate}
+\rhead{\myname}
+\setlength{\headheight}{18pt}
+\setlength{\headsep}{2pt}
+
+\title{\assignment}
+\author{\myname}
+\date{\duedate}
+
+\begin{document}
+\maketitle
+
+<<setup, echo = FALSE, message = FALSE, cache = FALSE>>=
+library(knitr)
+library(extrafont)
+opts_chunk$set(echo = TRUE, comment = NA, message = FALSE,
+               show.signif.stars = FALSE,
+               fig.align = 'center', fig.width = 6.5, fig.height = 3,
+               fig.pos = 'H', size = 'footnotesize', dev = 'pdf',
+               dev.args = list(family = 'CM Roman', pointsize = 11))
+knit_theme$set('print')
+
+#library(xtable)
+options(xtable.table.placement = 'H', width = 80, scipen = 2,
+        show.signif.stars = FALSE)
+
+#source('../.dependencies/WoolfCMH.r')
+#source('../.dependencies/BreslowDay.r')
+@
+
+{\it A study was conducted on the effects of ploidy on the prognosis of
+patients with cancers of the mouth. Patients were selected who had a
+paraffin-embedded sample of the cancerous tissue taken at the time of surgery.
+Follow-up survival data were obtained on each patient. The tissue samples were
+examined to determine if the tumor had a aneuploid (abnormal) or diploid
+(normal) DNA profile. The data set contains \texttt{type} with a 1 indicating
+aneuploid and a 2 indicating diploid tumor types, \texttt{time} is survival in
+weeks post-surgery, and \texttt{delta} with a 1 indicating death and 0
+indicating censoring. The question of interest is whether or not survival is
+associated with tumor type. We will examine this question by fitting the Cox
+proportional hazards model and a Weibull parametric model.}
+
+\begin{enumerate}
+
+\item%1
+{\it Fit a Cox proportional hazards model to these data. Give summary results
+and interpret the results in terms of the problem. Give both a point estimate
+and an approximate 95\% CI. Assess the adequacy of the proportional hazards
+assumption. Note that aneuploidy is the reference type.}
+
+<<p1q11>>=
+library(survival)
+library(KMsurv)
+library(SurvRegCensCov)
+data(tongue)
+
+fit.cox <- coxph(Surv(time, delta) ~ factor(type), tongue)
+summary(fit.cox)
+@
+
+We estimate that the hazard of death for patients with diploid tumors is
+1.594 times larger than the hazard of death for patients with aneuploid tumors,
+and we are 95\% confident that the true hazard ratio is between 0.9201 and
+2.762.
+
+There is no evidence (\(\chi^{2}_{1}=0.473\), \(\text{p-value}=0.491\)) that
+the proportional hazards assumption is violated. This is confirmed by the lack
+of trends in the plot of Schoedfeld residuals over time.
+
+<<p1q12, fig.height = 5>>=
+fit.zph <- cox.zph(fit.cox)
+fit.zph
+plot(fit.zph)
+@
+
+\pagebreak
+\item%2
+{\it Fit a parametric Weibull model. Again give summary results, interpret the
+results in terms of the problem giving a point estimate and an approximate
+95\% CI.}
+
+<<p1q21>>=
+fit.wei <- WeibullReg(Surv(time, delta) ~ factor(type), tongue)
+fit.wei
+@
+
+We estimate that the hazard of death for patients with diploid tumors is
+1.714 times larger than the hazard of death for patients with aneuploid tumors,
+and we are 95\% confident that the true hazard ratio is between 0.9920 and
+2.963.
+
+\end{enumerate}
+
+{\it We continue with the tongue cancer survival data.}
+
+\begin{enumerate}
+
+\item%1
+{\it For the Weibull model give an interpretation in terms of the accelerated
+failure-time model including both the point estimate and an approximate 95\%
+CI. I want you to compare the median survival times in the accelerated failure
+time representation.}
+
+We estimate the median survival time for patients with diploid tumors to be
+0.512 times the median survival time for patients with aneuploid tumors, with a
+95\% confidence interval of 0.257 to 1.019.
+
+\item%2
+{\it Fit a Log-Logistic parameteric model and give an interpretation in terms
+of the accelerated failure-time model including both the point estimate and an
+approximate 95\% CI.}
+
+<<p2q21>>=
+fit.llogis <- survreg(Surv(time, delta) ~ factor(type), dist = 'loglogistic', tongue)
+summary(fit.llogis)
+@
+
+The median surival time for patients with diploid tumors is estimated to be
+\(\exp\left(0.7906\right)=\Sexpr{round(exp(-coef(fit.llogis)[2]), 3)}\) times
+the median survival time for patients with aneuploid tumors, with a 95\%
+confidence interval of \(\exp(0.7906-1.96 \times 0.404)=
+\Sexpr{round(exp(-coef(fit.llogis)[2]+
+                 qnorm(0.025)*summary(fit.llogis)$table[2,2]), 3)}\) to
+\(\exp(0.7906+1.96 \times 0.404)=\Sexpr{round(exp(-coef(fit.llogis)[2]+
+                 qnorm(0.975)*summary(fit.llogis)$table[2,2]), 3)}\).
+
+\end{enumerate}
+
+{\it Based on the above does it appear that ploidy type is associated with
+survival time? Justify your answer.}
+
+All of the hazard ratio and acceleration factor confidence intervals above
+include 1, suggesting that the hazard ratio and acceleration factor do not
+differ by ploidy type, so the does not appear to be an association between
+ploidy type and survival time.
+
+\end{document}
