@@ -1,0 +1,311 @@
+\documentclass[11pt]{article}
+\usepackage{fullpage,graphicx,float,amsmath,enumitem,fancyhdr,textgreek}
+
+\setlist{parsep=5.5pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5.5pt}
+
+\usepackage[backend=bibtex,style=authoryear,citestyle=authoryear-comp]{biblatex}
+\addbibresource{references.bib}
+
+\newcommand\assignment{Stat 525 Project: A Bayesian Spatial-Temporal Model \\
+for Atmospheric PM\textsubscript{2.5} and Mortality}
+\newcommand\myname{Kenny Flagg}
+\newcommand\duedate{December 9, 2016}
+
+\pagestyle{fancy}
+\lhead{Stat 525 Project}
+\chead{\duedate}
+\rhead{\myname}
+\setlength{\headheight}{18pt}
+\setlength{\headsep}{2pt}
+
+\title{\assignment}
+\author{\myname}
+\date{\duedate}
+
+\begin{document}
+\maketitle
+
+<<setup, echo = FALSE, message = FALSE, cache = FALSE>>=
+library(knitr)
+library(extrafont)
+opts_chunk$set(echo = FALSE, comment = NA, message = FALSE,
+               fig.path = 'proj_figure/', cache.path = 'proj_cache/',
+               show.signif.stars = FALSE,
+               fig.align = 'center', fig.width = 6.5, fig.height = 3,
+               fig.pos = 'H', size = 'footnotesize', dev = 'pdf',
+               dev.args = list(family = 'CM Roman', pointsize = 11))
+knit_theme$set('print')
+
+#library(xtable)
+options(xtable.table.placement = 'H', width = 80, scipen = 2,
+        show.signif.stars = FALSE)
+@
+
+
+\section{Introduction}
+
+Air pollution is rampant in urban regions around the world, with many adverse
+effects on human and environmental health. One component of air pollution is
+particulate matter, or solid particles suspended in the air. Particles small
+enough to be inhaled (diameter less than 10 {\textmugreek}m, known as
+PM\textsubscript{10}) can cause respiratory irritation and disease; fine
+particulate (diameter less than 2.5 {\textmugreek}m, PM\textsubscript{2.5}) can
+be respired into the blood stream and lead to serious conditions including
+asthma, bronchitis, pneumonia, lung cancer, and toxic effects of the
+constituent chemicals in the particulate~\parencite{charlesworth}. Setting
+aside possible health consequences, PM\textsubscript{2.5} itself has been the
+subject of much investigation because its exact chemical characteristics vary
+across space and time depending on the chemicals in the local environment, and
+the natural and human mechanisms that disperse particles into the
+air~\parencite{ozkaynak}. Therefore, individuals exposed to the same
+particulate concentration at different times or places may be have been exposed
+to different chemicals, so measurements made at air quality monitoring stations
+may be poor proxies for individual exposure.
+
+Nonetheless, the association between air quality and human health at the level
+of a general population is an important concern for policymakers,
+so many authors have attempted to connect atmospheric PM\textsubscript{2.5}
+concentration with mortality among large, heterogeneous populations via
+sophisticated statistical models. \textcite{borja} used an overdispersed
+Poisson regression to model daily morality counts in Mexico City as a function
+of total PM\textsubscript{2.5} and other pollutant concentrations.
+\textcite{dominici} used hierarchical Bayesian model to study the effects of
+PM\textsubscript{2.5} and PM\textsubscript{10} concentration on daily mortality
+counts by city and region for 88 cities and seven regions in the United States.
+\textcite{krall} used a similar hierarchical model for daily mortality counts
+in 72 U.S. communities in six regions, but used separate concentration
+measurements of seven PM\textsubscript{2.5} constituents as predictors.
+
+\textcite{choietal} intended to improve upon models like those mentioned above
+by incorporating spatial and temporal smoothing. Their goal was to estimate
+the association between daily mortality counts and total atmospheric
+PM\textsubscript{2.5} concentration on several timescales across the entire
+state of North Carolina, and in particular to test the ``harvesting
+hypothesis'' that short-term increases in exposure have a larger effect on
+frail people than healthy people. They included demographic and weather
+variables, arguing that smoothing was necessary because the weather and
+particulate data were collected at different sites, and that modeling spatial
+and temporal trends should account for variation in PM\textsubscript{2.5}
+composition. They use their model to estimate relative risk of mortality at the
+county level. This paper serves to explain their model and discuss its
+strengths and weaknesses in the context of other epidemiological approaches.
+
+
+\section{The Spatial-Temporal Model}
+
+The response variable is the daily count of natural and cardiovascular
+mortalities for each combination of demographic variables, in each county in
+North Carolina, on each day of the year 2001. The explanatory variable of
+interest is the PM\textsubscript{2.5} concentration, measured in
+{\textmugreek}g/m\textsuperscript{3} every three days at 41 sites around North
+Carolina. Age, sex, race/ethnicity, ozone concentration, daily minimum
+temperature, daily maximum temperature, dew point, wind speed, and atmospheric
+pressure are identified as possible confounders and controlled for in the
+model. The authors are not clear how they evaluated the harvesting hypotheses,
+but from the variables described, it seems most likely that they did so by
+looking for an interaction between age and PM\textsubscript{2.5}. Age was used
+as a categorical variable, with categories for children 14 years and under,
+adults 15 to 64, and seniors 65 and older. 
+
+The model is comprised of two stages~(Figure~1). The first stage predicts the
+daily mean PM\textsubscript{2.5} concentration for each county. The second
+stage models daily mortality count with mean PM\textsubscript{2.5} as a
+predictor.
+
+\begin{figure}[b!]\centering
+\includegraphics[width=4in]{images/choifig1}
+\label{choifig1}\caption{Diagram of the two-stage model, from Choi et al.
+Multiple sources of PM\textsubscript{2.5} concentration measurements are
+combined with weather data to predict fine particulate concentration across
+North Carolina. The predictions are then combined with the weather data and
+demographic information to estimate relative risk of mortality.}
+\end{figure}
+
+\subsection*{Stage 1: Fine Particulate Matter}
+
+The first stage assumes that PM\textsubscript{2.5} is measured with error, so
+the observed value measured at location \(\mathbf{s}\) and day \(t\) is
+\begin{equation*}
+\widehat{Z}(\mathbf{s},t)=Z(\mathbf{s},t)+e(\mathbf{s},t); \quad
+e(\mathbf{s},t)\sim\mathrm{N}(0, \sigma^2)
+\end{equation*}
+where \(Z(\mathbf{s},t)\) is the latent true PM\textsubscript{2.5}
+concentration and \(e(\mathbf{s},t)\) is measurement error. They actually had
+three sources of PM\textsubscript{2.5} data using different collection methods,
+so \(\sigma^{2}\) is allowed to vary by data source.
+
+The latent value is treated in a linear regression
+\begin{equation*}
+Z(\mathbf{s},t)=\mathbf{M}^{T}(\mathbf{s},t)\boldsymbol{\zeta}
++e_{Z}(\mathbf{s},t)
+\end{equation*}
+with \(\mathbf{M}(\mathbf{s},t)\) being a vector of the weather covariates,
+and \(\boldsymbol{\zeta}\) is the vector of model coefficients. The random
+variation term \(e_{Z}(\mathbf{s},t)\) follows a normal distribution, with a
+covariance structure such that values at the same location on different days
+have an AR(1) structure with lag 1 correlation \(\psi_{Z}\), and observations
+at different locations on the same day have an exponential covariance function
+with sill \(\sigma^{2}_{Z}\), range \(\phi_{Z}\), and nugget 0. The authors
+selected this covariance structure after some exploratory analysis.
+
+The prior distribution for \(\sigma\) is \(\mathrm{Unif}(0, 5)\), based on the
+documentation about the measurement equipment. The priors
+\(\sigma_{Z} \sim \mathrm{Unif}(0, 100)\), \(\psi_{Z} \sim \mathrm{N}(0, 10)\),
+and \(\phi_{Z} \sim \mathrm{Unif}(0, 500)\) are meant to be uninformative. The
+authors do not mention the prior for \(\boldsymbol{\zeta}\).
+
+\begin{figure}[b!]\centering
+\includegraphics[width=3in]{images/choifig4a}
+\label{choifig4a}\caption{An example predicted PM\textsubscript{2.5} time
+series for Wake County. The complete time series (top) is decomposed into five
+components with variation on different timescales. The five components are used
+as predictors in the second stage.}
+\end{figure}
+
+This latent variable construction allows the PM\textsubscript{2.5}
+concentrations to be smoothed across space and time. The stage 1 model is used
+to predict \(Z(\mathbf{s},t)\) across the state, and then the posterior
+predictions are averaged by county to produce a time series \({Z_{j}(t)}\) of
+daily PM\textsubscript{2.5} concentrations for each county \(j\).
+
+The authors briefly mention (without providing details) that the weather data
+and PM\textsubscript{2.5} data were measured at different locations and on
+different days, so they used a similar ``stage 0'' model to predict
+\(\mathbf{M}(\mathbf{s},t)\) at the locations and times of the particulate
+measurements.
+
+
+\subsection*{Stage 2: Mortality}
+
+The second stage relates the mortality counts to the PM\textsubscript{2.5}
+concentrations and possible confounders. By way of a Fourier transform, the
+\({Z_{j}(t)}\) time series are decomposed into 5 different timescales, to
+capture variation with periods less than 3.5 days, between 3.5 days and one
+week, one week to two weeks, two weeks to one month, and longer than one
+month~(Figure~\ref{choifig4a}).
+
+The mortality count \(Y_{j}(t)\) in county \(j\) on day \(t\) is assumed to
+follow the generalized Poisson distribution of \textcite{famoye}, with mean
+\(\mu_{j}(t)\) and variance \(\mu_{j}(t)[1+\alpha\mu_{j}(t)]^{2}\), where
+\(\alpha\) is a dispersion parameter. A generalized additive mixed model is
+used, with
+\begin{equation}
+\log(\mu_{j}(t))=\gamma_{j}+\mathbf{x}^{T}_{j}(t)\boldsymbol{\beta}
++S(\mathbf{M}_{j}(t))
+\end{equation}
+where \(\gamma_{j}\) is a normally distributed random intercept for county
+\(j\) with mean \(\mu_{\gamma_{j}}\), and \(S(\mathbf{M}_{j}(t))\) is a smooth
+spline function of the meteorological variables. To account for dependence of
+adjacent counties, the \(\gamma_{j}\) have a conditional autoregressive
+structure (CAR) with scale \(\sigma_{\gamma}\) and reaction parameter
+\(\rho\)~\parencite{banerjee}.
+
+The final piece of this model is a linear fixed-effect component, where
+\(\mathbf{x}^{T}_{j}(t)\) is a row of the design matrix that includes the
+PM\textsubscript{2.5} time series components, demographic variables, and
+interactions. Although the notation does not make this clear, the coefficient
+vector \(\boldsymbol{\beta}\) is allowed to vary by season (winter, spring,
+fall, summer) and county.
+
+Choi et al. again chose uninformative priors, with
+\(\mu_{\gamma_{j}} \sim \mathrm{N}(0, 100)\) and
+\(1/\sigma^{2}_{\gamma} \sim \mathrm{Gamma}(0.5, 0.0005)\). The prior
+distribution of \(\rho\) is uniform with bounds that ``guarantee that the
+variance matrix [is] positive definite'' following the suggestion of Banerjee
+et al. For \(\boldsymbol{\beta}\), they use a special case of multivariate CAR,
+called the multivariate intrinsic autoregressive (MIAR)
+prior~\parencite{gelfrand}. The MIAR prior assumes some spatial smoothness
+among coefficients for adjacent counties. They do not mention the prior
+distribution of \(\alpha\).
+
+
+\section{Results from Choi et al.}
+
+Choi et al.~fit their model using Markov chain Monte Carlo implemented in
+WinBUGS and R. They ran two chains for 2,000 iterations after a burn-in period
+of 3,000 iterations. This seems insufficient to adequately characterize the
+joint posterior distribution of such a complicated model (recall that this
+posterior includes daily PM\textsubscript{2.5} concentrations for every county
+in North Carolina), but they comment that the fitting took ``a couple days''
+and their results section appears abbreviated, suggesting their main focus was
+on explaining and demonstrating the model. The authors say they assessed
+convergence using the Gelman-Rubin \(\widehat{R}\), autocorrelation functions,
+and traceplots, but did not present any of these.
+
+Results were summarized by the posterior mean and SD of log relative risk by
+season and timescale. This was calculated as 1,000 times the appropriate
+regression coefficient, and interpreted as the percent increase in mortality
+rate per 10 {\textmugreek}g/m\textsuperscript{3} increase in.
+PM\textsubscript{2.5} concentration. Posterior log relative risk was generally
+larger in winter and summer than in spring and fall, and larger for the longer
+timescales~(Figure~\ref{choifig5d}). The authors stated that the potential
+confounders did not have large interactions with fine particulate concentration
+on any timescale, nor did they have strong main effects. They found no evidence
+of harvesting.
+
+\begin{figure}
+\label{choifig5d}\caption{A plot of posterior log relative risk of mortality
+for Wake County, showing the mean and 95\% prediction bounds. Posterior log
+relative risk is higher for the longest timescale that for the other
+timescales, but only one interval excludes zero. The plots for other counties
+show similar results.}
+\centering\includegraphics[width=3in]{images/choifig5d}
+\end{figure}
+
+
+\section{Discussion}
+
+The analysis by Choi, Fuentes, and Reich has some limitations specific to their
+model and implementation. More generally, their study illustrates a trade-off
+between making broad generalizations about a heterogeneous population versus
+learning detailed information about certain groups or individuals. However, it
+has a strength in that it provides a quick summary of the association between
+mortality and atmospheric fine particulate across a large region containing
+diverse individuals.
+
+Some issues specific to Choi et al.~include difficulty in reproducing their
+results without knowing all of the priors used. Also, as with many studies,
+endless comments could be made about the choice of potential confounders to
+control for (smoker/non-smoker status is a curious omission).
+
+On a similar note, total PM\textsubscript{2.5} concentration and mortality
+counts are an simplification of a complex issue, and they should be examined
+jointly with other outcomes and air quality variables. For example,
+\textcite{vinikoorimler} looked at the association between lung cancer
+incidence and PM\textsubscript{2.5} in North Carolina. Choi, Fuentes, and
+Reich's approach certainly could be used to model disease incidence and to use
+measurements of multiple PM\textsubscript{2.5} constituents.
+
+Studies that draw subjects from a broadly-defined population will typically
+average over lots of potentially useful information. As \textcite{ozkaynak}
+discuss, air quality monitoring stations fail to capture the details of
+individuals' exposure, which depends on behavior and occupation, among many
+other things. This study cannot identify where or how people were exposed,
+what they were exposed to, or what health problems they had as a result.
+
+On the other side of the generalization versus detail trade-off,
+\textcite{riediker} looked at a select population of highly exposed
+individuals. They studied young male North Carolina highway patrol officers
+with air quality measurement equipment placed in their patrol cars.
+The officers had blood samples drawn daily, and were constantly monitored
+by electrocardiograms. This study certainly had limitations. Only nine officers
+were observed for four days each, but detailed information was produced about
+exposure to numerous different substances and many health-related variables.
+Such information combined with rigorous physiological or chemical explanations
+of the mechanics of exposure could do better at identifying risk factors than
+large-scale studies, particularly if used in cohort studies with groups who
+differ in exposure level. However, this type of study lacks the ability to make
+immediate inference to the general population. 
+
+Despite the drawbacks, complex models like that of Choi et al.~are very useful.
+Organizations concerned with public health need to know where possibly
+hazardous fine particulate is concentrated, and when and where people are dying
+and getting sick. This model provides exactly that information, and can be
+used to identify populations for more intensive future study.
+
+
+\printbibliography
+
+\end{document}

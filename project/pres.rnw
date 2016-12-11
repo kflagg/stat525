@@ -1,0 +1,421 @@
+\documentclass[unknownkeysallowed]{beamer}
+
+\usepackage{graphicx,epsfig,hyperref,booktabs,lmodern,textgreek}
+%\usepackage[labelformat=simple,font=scriptsize,skip=0pt,justification=justified,singlelinecheck=false]{caption}
+
+\usepackage[backend=bibtex,style=authoryear,citestyle=authoryear-comp]{biblatex}
+\addbibresource{references.bib}
+
+\beamertemplatenavigationsymbolsempty
+
+\mode<presentation>
+{
+  \usetheme{bunsen}
+  \setbeamercovered{transparent}
+  \setbeamertemplate{items}[circle]
+}
+
+% set fonts
+%\usepackage{fontspec}
+%\setsansfont{Fontin Sans}
+%\setbeamerfont{frametitle}{size=\LARGE,series=\bfseries}
+
+% color definitions
+\usepackage{color}
+\definecolor{uipoppy}{RGB}{225, 64, 5}
+\definecolor{uipaleblue}{RGB}{96,123,139}
+\definecolor{uiblack}{RGB}{0, 0, 0}
+
+% caption styling
+%\DeclareCaptionFont{uiblack}{\color{uiblack}}
+%\DeclareCaptionFont{uipoppy}{\color{uipoppy}}
+%\captionsetup{labelfont={uipoppy},textfont=uiblack}
+
+% title slide definition
+\title{\(PM_{2.5}\) and Mortality}
+\author{Kenny Flagg}
+\institute[MSU]{Department of Mathematical Sciences \\
+Montana State University}
+\date{December 5, 2016}
+
+\begin{document}
+
+<<setup, echo = FALSE, message = FALSE, cache = FALSE>>=
+library(knitr)
+library(extrafont)
+opts_chunk$set(echo = FALSE, comment = NA, message = FALSE,
+               fig.path = 'pres_figure/', cache.path = 'pres_cache/',
+               show.signif.stars = FALSE,
+               fig.align = 'center', fig.width = 6.5, fig.height = 3,
+               fig.pos = 'H', size = 'footnotesize', dev = 'pdf',
+               dev.args = list(pointsize = 11))
+knit_theme$set('print')
+
+#library(xtable)
+options(xtable.table.placement = 'H', width = 80, scipen = 2,
+        show.signif.stars = FALSE)
+@
+
+
+\setbeamertemplate{background}
+{\includegraphics[width=\paperwidth,height=\paperheight]{beamer_title_page1}}
+\setbeamertemplate{footline}[default]
+
+\begin{frame}
+	\vspace*{.5cm}
+	\begin{center}
+		\textcolor{white}{\huge A Bayesian Spatial-Temporal Model \\
+      for \(\text{PM}_{2.5}\) and Mortality}\\
+		\vspace{.5cm}
+		\textcolor{white}{\Large Kenny Flagg}\\
+	\end{center}
+\end{frame}
+
+% Set the background for the rest of the slides.
+% Insert infoline
+\setbeamertemplate{background}
+ {\includegraphics[width=\paperwidth,height=\paperheight]{msubg2}}
+%\setbeamertemplate{footline}[bunsentheme]
+
+
+\begin{frame}
+\frametitle{Introduction}
+
+\begin{itemize}
+
+\item Particulate matter --- solid particle pollutants suspended in air
+
+\item Human-generated particles generally less than 2 {\textmugreek}m in
+diameter; naturally-occuring particles are larger~\parencite{charlesworth}
+
+\item Two sizes are studied: \(\text{PM}_{10}\) (\(<\) 10 {\textmugreek}m) and
+\(\text{PM}_{2.5}\) (fine particulate matter, \(<\) 2.5 {\textmugreek}m)
+
+\item Exact chemical composistion varies
+
+\item Concern about human health effects of As, Cd, Cr, Hg, Mn, Ni, Pb, V, and
+others in \(\text{PM}_{2.5}\)
+
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Bayesian Models}
+
+\begin{itemize}
+
+\item \textcite{choietal} use a Bayesian spatiotemporal model for daily
+mortality counts in North Carolina in 2001
+
+\begin{itemize}
+
+\item \(\text{PM}_{2.5}\) concentration as risk factor --- several timescales
+
+\item Control for age, gender, race/ethnicity, weather
+
+\item Use all recorded natural and cardiovascular deaths
+
+\end{itemize}
+
+\item Test ``harvesting hypothesis'' --- short-term exposure affects frail
+individuals more than healthy individuals
+
+\item They ultimately use the model to estimate relative risk
+
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Bayesian Models}
+
+\begin{itemize}
+
+\item Use data to update prior distribution into posterior distribution
+
+\item Two-stage model
+
+\begin{itemize}
+
+\item Stage 1: Spatiotemporal model for \(\text{PM}_{2.5}\) with meteorological
+covariates
+
+\item Stage 2: Generalized Poisson model for daily mortality counts by county,
+with demographic and meterological covariates
+
+\item Posterior prediction from stage 1 used as prior for stage 2
+
+\end{itemize}
+
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Bayesian Models}
+
+\begin{center}
+\vspace{-0.5cm}\includegraphics[width=0.75\linewidth]{images/choifig1}
+\end{center}
+Figure 1 from Choi et al.
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Stage 1: \(\text{PM}_{2.5}\) Model}
+
+\begin{itemize}
+
+\item Measurement error model
+
+\begin{itemize}
+
+\item \(\text{PM}_{2.5}\) measured in {\textmugreek}g/m\textsuperscript{3} at
+location \(\mathbf{s}\) and day \(t\)
+
+\item Observed:
+\(\widehat{Z}(\mathbf{s},t)=Z(\mathbf{s},t)+e(\mathbf{s},t)\)
+\begin{itemize}
+\item \(e(\mathbf{s},t) \overset{iid}{\sim} N(0, \sigma^2)\)
+\end{itemize}
+
+\item Latent: \(Z(\mathbf{s},t)=\mathbf{M}^{T}(\mathbf{s},t)\boldsymbol{\zeta}
++e_{Z}(\mathbf{s},t)\)
+\begin{itemize}
+\item \(e_{Z}(\mathbf{s},t)\) normal with mean \(\psi_{Z}e_{Z}(\mathbf{s},t-1)\)
+and covariance \(Cov(e_{Z}(\mathbf{s},t),e_{Z}(\mathbf{s}',t))
+=\sigma^{2}_{Z}\exp(-||\mathbf{s}-\mathbf{s}'||/\phi_{Z})\)
+\end{itemize}
+
+\item \(\mathbf{M}(\mathbf{s},t)\) is a vector of weather covariates,
+\(\boldsymbol{\zeta}\) is a vector of model coefficients
+
+\end{itemize}
+
+\item Priors
+
+\begin{itemize}
+
+\item \(\sigma \sim Unif(0, 5)\), \(\sigma_{Z} \sim Unif(0, 100)\)
+
+\item \(\psi_{Z} \sim N(0, 10)\), \(\phi_{Z} \sim Unif(0, 500)\)
+
+\item Prior for \(\boldsymbol{\zeta}\) not mentioned
+
+\end{itemize}
+
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Stage 1: \(\text{PM}_{2.5}\) Model}
+
+\begin{itemize}
+
+\item Averaged over area of county to compute \(Z_{j}(t)\), the
+\(\text{PM}_{2.5}\) concentration for county \(j\) on day \(t\)
+
+\item Fourier transform to decompose \(Z_{j}(t)\) time series into 5
+different timescales, \(Z_{jl}(t)\), \(l=1,2,3,4,5\)
+
+\item A similar ``stage 0'' model predicted \(\mathbf{M}(\mathbf{s},t)\) at the
+locations where \(\text{PM}_{2.5}\) was measured
+
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Stage 1: \(\text{PM}_{2.5}\) Model}
+
+\begin{center}
+\vspace{-0.5cm}\includegraphics[width=0.6\linewidth]{images/choifig4a}
+\end{center}
+Figure 4a from Choi et al.
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Stage 2: Daily Mortality Model}
+
+\begin{itemize}
+
+\item Generalized Poisson model~\parencite{famoye}
+
+\begin{itemize}
+
+\item Observe mortality count \(Y_{j}(t)\) in county \(j\) on day \(t\)
+
+\item \(Y_{j}(t)\) has mean \(\mu_{j}(t)\) and variance
+\(\mu_{j}(t)[1+\alpha\mu_{j}(t)]^{2}\)
+
+\item \(\log(\mu_{j}(t))=\gamma_{j}+\mathbf{x}^{T}_{j}(t)\boldsymbol{\beta}
++S(\mathbf{M}_{j}(t))\)
+
+\begin{itemize}
+
+\item \(\gamma_{j}\) normally distributed random effect with mean
+\(\mu_{\gamma_{j}}\)
+
+\item The \(\gamma_{j}\) have a conditional autoregressive structure (CAR)
+that depends on the adjecency matrix of the counties, with scale
+\(\sigma_{\gamma}\) and reaction parameter \(\rho\)~\parencite{banerjee}
+
+\end{itemize}
+
+\item \(\mathbf{x}_{j}(t)\) a vector including the \(Z_{jl}(t)\), demographic
+variables, and interactions; \(\boldsymbol{\beta}\) a vector of coefficients
+
+\item \(S(\mathbf{M}_{j}(t))\) a smooth spline function of the meteorological
+variables
+
+\end{itemize}
+
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Stage 2: Daily Mortality Model}
+
+\begin{itemize}
+
+\item Priors
+
+\begin{itemize}
+
+\item \(\mu_{\gamma_{j}} \overset{iid}{\sim} N(0, 100)\)
+
+\item \(\sigma^{2}_{\gamma} \sim InvGamma(0.5, 0.0005)\)
+
+\item \(\rho\) uniform with bounds that ``guarantee that the variance matrix
+[is] positive definite''
+
+\item \(\boldsymbol{\beta}\) uses a spacial case of multivariate CAR, the
+multivariate intrinsic autoregressive (MIAR) prior~\parencite{gelfrand}
+
+\item \(\alpha\) prior not mentioned
+
+\end{itemize}
+
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Model Fitting}
+
+\begin{itemize}
+
+\item Markov chain Monte Carlo implemented using WinBUGS and R
+
+\item Two chains run for 2,000 iterations each (plus 3,000 iterations burn-in)
+
+\item Took ``a couple of days to run''
+
+\item Convergence assessed with \(\widehat{R}\), autocorrelation functions,
+trace plots
+
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Results}
+
+\begin{itemize}
+
+\item Reported posterior mean and SD of log relative risk by season and
+timescale
+
+\item \(\log(RR)=1\text{,}000\beta_{jlk}\) is the percent increase in
+mortality rate per 10 {\textmugreek}g/m\textsuperscript{3} increase in
+\(\text{PM}_{2.5}\) concentration
+
+\item RR larger in winter and summer than in spring and fall
+
+\item RR larger for long timescales than short timescales
+
+\item The possible confounders did not have large interactions with
+\(\text{PM}_{2.5}\) or strong main effects
+
+\begin{itemize}
+
+\item No evidence of harvesting
+
+\end{itemize}
+
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}
+\frametitle{Results}
+
+\vspace{-0.5cm}\begin{center}
+\includegraphics[width=0.6\linewidth]{images/choifig5d}
+\end{center}
+Figure 5d from Choi et al.
+
+\end{frame}
+
+
+\begin{frame}
+\frametitle{Discussion}
+
+\begin{itemize}
+
+\item Tradeoffs between population-level inference and understanding effects on
+individuals
+
+\item Broad populations
+
+\begin{itemize}
+
+\item Most other studies of particulate exposure also use complicated Bayesian
+models
+
+\item \(\text{PM}_{2.5}\) measured at monitoring stations may be a poor proxy
+for individual exposure~\parencite{ozkaynak}
+
+\end{itemize}
+
+\item Narrow populations
+
+\begin{itemize}
+
+\item \textcite{riediker} studied young male NC highway patrol officers with
+monitoring devices in patrol cars
+
+\end{itemize}
+
+\item Can't connect specific chemicals to mortalities
+
+\item Good starting point for more directed investigations
+
+\end{itemize}
+
+\end{frame}
+
+
+\begin{frame}[allowframebreaks]
+\frametitle{References}
+
+\vspace{-0.5cm}{\tiny
+\printbibliography
+}
+\end{frame}
+
+\end{document}
